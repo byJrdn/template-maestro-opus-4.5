@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equity Data Validation Dashboard | Certent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'isw-blue': { 50:'#E3F2FD',100:'#BBDEFB',200:'#90CAF9',300:'#64B5F6',400:'#42A5F5',500:'#2C3E68',600:'#253457',700:'#1E2A46',800:'#172035',900:'#0F1624' },
+                        'isw-green': { 50:'#F0F9F0',100:'#E1F3E1',200:'#C3E7C3',300:'#A6DAA6',400:'#88CD88',500:'#5CB85C',600:'#4A9F4A',700:'#388638',800:'#266D26',900:'#145414' },
+                        'success': { 50:'#E8F5E9',100:'#C8E6C9',500:'#4CAF50',600:'#43A047',700:'#2E7D32' },
+                        'warning': { 50:'#FFFDE7',100:'#FFF9C4',500:'#FFEB3B',600:'#FDD835',700:'#F9A825' },
+                        'error': { 50:'#FFEBEE',100:'#FFCDD2',500:'#F44336',600:'#E53935',700:'#C62828' },
+                    },
+                    fontFamily: { 'display':['Inter','system-ui'], 'body':['Source Sans 3','system-ui'], 'mono':['JetBrains Mono','monospace'] },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes spinner { to { transform: rotate(360deg); } }
+        .card-interactive { transition: transform 0.2s, box-shadow 0.2s; }
+        .card-interactive:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-press:active { transform: scale(0.97); }
+        .modal-overlay { background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); }
+        .animate-scale-in { animation: scaleIn 0.15s ease-out; }
+        .row-valid { border-left: 3px solid #2E7D32; }
+        .row-warning { border-left: 3px solid #F9A825; }
+        .row-error { border-left: 3px solid #C62828; }
+        .cell-warning { background-color: #FFFDE7; }
+        .cell-error { background-color: #FFEBEE; }
+        .trust-gradient { background: linear-gradient(90deg, #C62828 0%, #F9A825 50%, #2E7D32 100%); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-active { background-color: #2E7D32; }
+        .status-draft { background-color: #F9A825; }
+        .stat-number { font-variant-numeric: tabular-nums; }
+        .spinner { animation: spinner 1s linear infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 font-body text-slate-800 antialiased min-h-screen">
+<div id="app" class="min-h-screen flex flex-col">
+
+<!-- HEADER -->
+<header class="bg-isw-blue-600 border-b border-slate-200 sticky top-0 z-50 shadow-md">
+    <div class="max-w-[1680px] mx-auto px-6 flex items-center justify-between h-16">
+        <div class="flex items-center gap-8">
+            <a href="#" onclick="showPage('templates');return false;" class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center -ml-2">
+                    <img src="assets/ISW-LOGO ICON.png" alt="ISW Logo" class="h-10 w-10">
+                </div>
+                <div class="font-display text-2xl font-bold" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">
+                    <span class="text-white">insight</span><span class="text-isw-green-400">software</span>
+                </div>
+            </a>
+            <nav class="hidden md:flex items-center gap-2 pl-8 border-l border-white/20">
+                <a href="#" onclick="showPage('templates');return false;" class="text-sm font-medium bg-isw-green-500 text-white px-4 py-2 rounded-md shadow-sm transition-all hover:bg-isw-green-600">Templates</a>
+                <span id="breadcrumb-sep" class="text-white/50 hidden">/</span>
+                <span id="breadcrumb-cur" class="text-sm font-medium text-white hidden">Data Validation</span>
+            </nav>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right hidden sm:block"><p class="text-sm font-medium text-white">Jordan Mitchell</p><p class="text-xs text-white/80">Template Maestro</p></div>
+            <div class="w-9 h-9 bg-isw-green-500 text-white rounded-full flex items-center justify-center font-display font-semibold text-sm ring-2 ring-white/20">JM</div>
+        </div>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="flex-1">
+    <div id="page-templates" class="page active"><!-- TEMPLATES PAGE - Paste inside #page-templates div in 01-base-layout.html -->
+
+<div class="max-w-[1680px] mx-auto px-6 py-8">
+    
+    <!-- Page Header with CTAs -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+        <div>
+            <h1 class="font-display font-bold text-2xl text-slate-900 mb-1">Template Models</h1>
+            <p class="text-slate-600">Manage validation templates and data requirements for equity imports</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="openModal('smart-upload')" class="btn-press inline-flex items-center gap-2 px-5 py-2.5 bg-isw-green-600 hover:bg-isw-green-700 text-white font-semibold rounded-lg shadow-sm transition-all">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                Smart Template Upload
+            </button>
+            <button class="btn-press inline-flex items-center gap-2 px-4 py-2.5 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                New Template
+            </button>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="template-search" placeholder="Search templates..." class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none transition-all">
+            </div>
+            <select id="filter-type" class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[140px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                <option value="">All Types</option>
+                <option value="espp">ESPP</option>
+                <option value="rsu">RSU Awards</option>
+                <option value="txn">Transactions</option>
+                <option value="parts">Participants</option>
+            </select>
+            <select id="filter-status" class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[130px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Template List Container -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <!-- Table Header -->
+        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wide">
+            <div class="col-span-5">Template Name</div>
+            <div class="col-span-2">Type</div>
+            <div class="col-span-2">Last Modified</div>
+            <div class="col-span-1">Status</div>
+            <div class="col-span-2 text-right">Actions</div>
+        </div>
+        
+        <!-- Template Rows - Populated dynamically -->
+        <div id="template-list" class="divide-y divide-slate-100">
+            <!-- Empty state shown when no templates -->
+            <div id="empty-state" class="px-6 py-16 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                </div>
+                <h3 class="font-display font-semibold text-slate-900 mb-1">No templates yet</h3>
+                <p class="text-slate-500 mb-4">Get started by uploading a Smart Template or creating one manually.</p>
+                <button onclick="openModal('smart-upload')" class="inline-flex items-center gap-2 px-4 py-2 bg-isw-green-600 hover:bg-isw-green-700 text-white font-medium rounded-lg text-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Upload Template
+                </button>
+            </div>
+        </div>
+        
+        <!-- Pagination Footer -->
+        <div id="pagination" class="hidden flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200">
+            <p class="text-sm text-slate-600">Showing <span id="showing-range" class="font-medium">0-0</span> of <span id="total-count" class="font-medium">0</span> templates</p>
+            <div class="flex items-center gap-2">
+                <button id="btn-prev" class="px-3 py-1.5 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>Previous</button>
+                <button id="btn-next" class="px-3 py-1.5 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 
+TEMPLATE ROW HTML STRUCTURE (for JS rendering):
+
+<div class="card-interactive grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 cursor-pointer" onclick="selectTemplate('TEMPLATE_ID')">
+    <div class="col-span-5 flex items-center gap-3">
+        <div class="w-10 h-10 bg-{TYPE_COLOR}-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-{TYPE_COLOR}-600">...</svg>
+        </div>
+        <div>
+            <h3 class="font-semibold text-slate-900">{TEMPLATE_NAME}</h3>
+            <p class="text-sm text-slate-500">{DESCRIPTION}</p>
+        </div>
+    </div>
+    <div class="col-span-2">
+        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-{TYPE_COLOR}-100 text-{TYPE_COLOR}-700">{TYPE}</span>
+    </div>
+    <div class="col-span-2 text-sm text-slate-600">{MODIFIED_DATE}</div>
+    <div class="col-span-1">
+        <span class="inline-flex items-center gap-1.5">
+            <span class="status-dot status-{STATUS}"></span>
+            <span class="text-sm text-slate-600">{STATUS_LABEL}</span>
+        </span>
+    </div>
+    <div class="col-span-2 flex justify-end">
+        <button class="p-2 text-slate-500 hover:text-isw-blue-600 hover:bg-isw-blue-50 rounded-lg transition-colors" onclick="event.stopPropagation(); openModal('settings');" title="Settings">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+    </div>
+</div>
+
+TYPE COLORS:
+- Participants: purple
+- Transactions: emerald  
+- RSU Awards: isw-blue
+- ESPP: isw-green
+-->
+</div>
+    <div id="page-validation" class="page"><!-- VALIDATION PAGE - Paste inside #page-validation div in 01-base-layout.html -->
+
+<div class="max-w-[1680px] mx-auto px-6 py-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <button onclick="showPage('templates')" class="p-2 text-slate-500 hover:text-isw-blue-600 hover:bg-slate-100 rounded-lg transition-colors" title="Back to Templates">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </button>
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 id="validation-template-name" class="font-display font-bold text-xl text-slate-900">Template Name</h1>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-success-100 text-success-700">Processing Complete</span>
+                </div>
+                <p id="validation-file-info" class="text-sm text-slate-500 mt-0.5">filename.xlsx • 0 rows</p>
+            </div>
+        </div>
+        <button onclick="openModal('settings')" class="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Template Settings
+        </button>
+    </div>
+
+    <!-- Statistics Spanner -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+        
+        <!-- Data Completion -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Completion</span>
+                <svg class="w-4 h-4 text-isw-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <p id="stat-completion" class="stat-number text-2xl font-bold text-slate-900 mb-1">--%</p>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="stat-completion-bar" class="h-full bg-isw-blue-500 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+            <p id="stat-completion-detail" class="text-xs text-slate-500 mt-1">0 of 0 rows complete</p>
+        </div>
+
+        <!-- Trust Score -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Trust Score</span>
+                <svg class="w-4 h-4 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </div>
+            <p id="stat-trust" class="stat-number text-2xl font-bold text-slate-900 mb-1">--%</p>
+            <div class="relative w-full h-2 trust-gradient rounded-full">
+                <div id="stat-trust-indicator" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-success-600 rounded-full shadow-sm transition-all" style="left: 0%"></div>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Data quality score</p>
+        </div>
+
+        <!-- Valid Rows -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Valid</span>
+                <svg class="w-4 h-4 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <p id="stat-valid" class="stat-number text-2xl font-bold text-success-700">--</p>
+            <p id="stat-valid-pct" class="text-xs text-slate-500">--% of total</p>
+        </div>
+
+        <!-- Warning Rows -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Warnings</span>
+                <svg class="w-4 h-4 text-warning-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <p id="stat-warnings" class="stat-number text-2xl font-bold text-warning-700">--</p>
+            <p id="stat-warnings-pct" class="text-xs text-slate-500">--% of total</p>
+        </div>
+
+        <!-- Error Rows -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Errors</span>
+                <svg class="w-4 h-4 text-error-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </div>
+            <p id="stat-errors" class="stat-number text-2xl font-bold text-error-700">--</p>
+            <p id="stat-errors-pct" class="text-xs text-slate-500">--% of total</p>
+        </div>
+
+        <!-- Quick Actions Mini Card -->
+        <div class="bg-gradient-to-br from-isw-blue-700 to-isw-blue-800 rounded-xl shadow-sm p-4 text-white">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-isw-blue-200 uppercase tracking-wide">Quick Fix</span>
+                <svg class="w-4 h-4 text-isw-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <p id="stat-fixable" class="stat-number text-2xl font-bold">--</p>
+            <p class="text-xs text-isw-blue-200">Auto-fixable issues</p>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            
+            <!-- Left Actions -->
+            <div class="flex items-center gap-3">
+                <button id="btn-autofix" onclick="runAutoFix(this)" class="btn-press inline-flex items-center gap-2 px-5 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg shadow-sm transition-all">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Auto Fix Data
+                </button>
+                
+                <select id="filter-view" class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                    <option value="all">All Rows</option>
+                    <option value="valid">Valid Only</option>
+                    <option value="warnings">Warnings Only</option>
+                    <option value="errors">Errors Only</option>
+                </select>
+                
+                <button class="p-2.5 text-slate-500 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors" title="Refresh">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+            
+            <!-- Right Actions - Export -->
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-slate-500">Export:</span>
+                <button onclick="openModal('export')" class="px-3 py-2 text-sm text-slate-600 hover:text-error-600 border border-slate-300 hover:border-error-300 rounded-lg transition-colors">Error Report</button>
+                <button onclick="openModal('export')" class="px-3 py-2 text-sm text-slate-600 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors">Full XLS</button>
+                <button onclick="openModal('export')" class="px-3 py-2 text-sm text-slate-600 hover:text-success-600 border border-slate-300 hover:border-success-300 rounded-lg transition-colors">Tab Delimited</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Grid Container -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <!-- Grid Header -->
+        <div class="flex items-center justify-between px-6 py-3 bg-slate-50 border-b border-slate-200">
+            <div class="flex items-center gap-3">
+                <h2 class="font-display font-semibold text-slate-900">Data Grid</h2>
+                <span id="grid-dimensions" class="px-2 py-0.5 bg-slate-200 text-slate-600 text-xs font-medium rounded">0 rows × 0 columns</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500">Color Key:</span>
+                <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 bg-success-100 border-l-2 border-success-600 rounded-sm"></span> Valid</span>
+                <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 bg-warning-100 border-l-2 border-warning-600 rounded-sm"></span> Warning</span>
+                <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 bg-error-100 border-l-2 border-error-600 rounded-sm"></span> Error</span>
+            </div>
+        </div>
+        
+        <!-- Handsontable Container -->
+        <div id="handsontable-container" class="min-h-[400px]">
+            <!-- Placeholder shown before data loads -->
+            <div id="grid-placeholder" class="flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125"/></svg>
+                </div>
+                <h3 class="font-display font-semibold text-slate-900 mb-1">No data loaded</h3>
+                <p class="text-slate-500 text-sm">Select a template from the list to load validation data.</p>
+            </div>
+        </div>
+        
+        <!-- Grid Footer -->
+        <div class="flex items-center justify-between px-6 py-3 bg-slate-50 border-t border-slate-200">
+            <p id="last-validated" class="text-xs text-slate-500">Last validated: --</p>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-500">Jump to row:</label>
+                <input type="number" id="jump-to-row" min="1" class="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:border-isw-blue-500 focus:outline-none">
+                <button onclick="jumpToRow()" class="px-2 py-1 text-xs text-isw-blue-600 hover:bg-isw-blue-50 border border-isw-blue-300 rounded transition-colors">Go</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--
+HANDSONTABLE INTEGRATION NOTES:
+
+1. Include Handsontable CSS/JS:
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+   <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+
+2. Initialize in JS:
+   const hot = new Handsontable(document.getElementById('handsontable-container'), {
+       data: validationData,
+       colHeaders: columnHeaders,
+       rowHeaders: true,
+       height: 500,
+       licenseKey: 'non-commercial-and-evaluation',
+       cells: function(row, col) {
+           const cellProperties = {};
+           const rowStatus = getRowStatus(row); // your validation logic
+           if (rowStatus === 'error') {
+               cellProperties.className = 'row-error';
+           } else if (rowStatus === 'warning') {
+               cellProperties.className = 'row-warning';
+           }
+           return cellProperties;
+       }
+   });
+
+3. Update stats function:
+   function updateStats(data) {
+       document.getElementById('stat-completion').textContent = data.completion + '%';
+       document.getElementById('stat-completion-bar').style.width = data.completion + '%';
+       // ... etc
+   }
+
+4. Jump to row:
+   function jumpToRow() {
+       const row = parseInt(document.getElementById('jump-to-row').value) - 1;
+       if (row >= 0 && row < hot.countRows()) {
+           hot.scrollViewportTo(row, 0);
+           hot.selectCell(row, 0);
+       }
+   }
+-->
+</div>
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-[1680px] mx-auto px-6 flex items-center justify-between text-sm text-slate-500">
+        <p>© 2025 insightsoftware. All rights reserved.</p>
+        <div class="flex gap-4"><a href="#" class="hover:text-isw-blue-600">Privacy</a><a href="#" class="hover:text-isw-blue-600">Terms</a><a href="#" class="hover:text-isw-blue-600">Support</a></div>
+    </div>
+</footer>
+</div>
+
+<!-- Paste modals from 04-modals.html here --><!-- MODALS - Paste before closing </body> tag in 01-base-layout.html -->
+
+<!-- Smart Template Upload Modal -->
+<div id="modal-smart-upload" class="fixed inset-0 z-50 hidden">
+    <div class="modal-overlay absolute inset-0" onclick="closeModal('smart-upload')"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-lg pointer-events-auto">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="font-display font-semibold text-lg text-slate-900">Smart Template Upload</h2>
+                        <p class="text-sm text-slate-500">Auto-extract validation rules from Excel</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feature Highlight -->
+            <div class="mx-6 mt-4 p-4 bg-gradient-to-r from-isw-blue-50 to-success-50 rounded-lg border border-isw-blue-100">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-isw-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <div>
+                        <p class="font-medium text-slate-900 text-sm">Intelligent Rule Extraction</p>
+                        <p class="text-xs text-slate-600 mt-0.5">Auto-detects: headers, data types, validation rules, conditional formatting, formulas</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form -->
+            <div class="px-6 py-4 space-y-4">
+                
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Upload Template File</label>
+                    <div id="upload-dropzone" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-isw-blue-400 hover:bg-isw-blue-50 transition-colors cursor-pointer">
+                        <input type="file" id="template-file" class="hidden" accept=".xlsx,.xls,.xlsm">
+                        <svg class="w-10 h-10 text-slate-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p class="text-sm text-slate-600">Drag and drop or <span class="text-isw-blue-600 font-medium">browse files</span></p>
+                        <p class="text-xs text-slate-400 mt-1">.xlsx, .xls, .xlsm (max 25MB)</p>
+                    </div>
+                    <p id="selected-file" class="text-sm text-success-600 mt-2 hidden"></p>
+                </div>
+                
+                <!-- Template Name -->
+                <div>
+                    <label for="new-template-name" class="block text-sm font-medium text-slate-700 mb-2">Template Name</label>
+                    <input type="text" id="new-template-name" placeholder="e.g., ESPP Purchase Template Q4 2025" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                </div>
+                
+                <!-- Template Type -->
+                <div>
+                    <label for="new-template-type" class="block text-sm font-medium text-slate-700 mb-2">Template Type</label>
+                    <select id="new-template-type" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                        <option value="">Select type...</option>
+                        <option value="parts">Participants</option>
+                        <option value="txn">Transactions</option>
+                        <option value="rsu">RSU Awards</option>
+                        <option value="espp">ESPP</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeModal('smart-upload')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
+                <button onclick="createTemplate()" class="btn-press inline-flex items-center gap-2 px-5 py-2 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg shadow-sm transition-all">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    Upload & Analyze
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div id="modal-export" class="fixed inset-0 z-50 hidden">
+    <div class="modal-overlay absolute inset-0" onclick="closeModal('export')"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-md pointer-events-auto">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="font-display font-semibold text-lg text-slate-900">Export Settings</h2>
+            </div>
+            
+            <!-- Form -->
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label for="export-filename" class="block text-sm font-medium text-slate-700 mb-2">File Name</label>
+                    <div class="flex">
+                        <input type="text" id="export-filename" value="Q4_2025_Export" class="flex-1 px-4 py-2.5 border border-slate-300 rounded-l-lg text-sm focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                        <span id="export-extension" class="px-3 py-2.5 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-sm text-slate-600">.xlsx</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Options</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
+                            <span class="text-sm text-slate-700">Include header row</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
+                            <span class="text-sm text-slate-700">Preserve data types</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
+                            <span class="text-sm text-slate-700">Include validation status column</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeModal('export')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
+                <button onclick="closeModal('export')" class="btn-press inline-flex items-center gap-2 px-5 py-2 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Settings Modal -->
+<div id="modal-settings" class="fixed inset-0 z-50 hidden">
+    <div class="modal-overlay absolute inset-0" onclick="closeModal('settings')"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-hidden flex flex-col">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="font-display font-semibold text-lg text-slate-900">Template Settings</h2>
+                <p id="settings-template-name" class="text-sm text-slate-500">Template Name</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="px-6 border-b border-slate-200">
+                <nav class="flex gap-6">
+                    <button class="py-3 text-sm font-medium text-isw-blue-600 border-b-2 border-isw-blue-600">Validation Rules</button>
+                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Visual Cues</button>
+                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Auto-Fix Rules</button>
+                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Client Logic</button>
+                </nav>
+            </div>
+            
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto px-6 py-4">
+                
+                <!-- Validation Rules Table -->
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="text-left py-2 font-medium text-slate-600">Field</th>
+                            <th class="text-left py-2 font-medium text-slate-600">Type</th>
+                            <th class="text-left py-2 font-medium text-slate-600">Required</th>
+                            <th class="text-left py-2 font-medium text-slate-600">Validation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr>
+                            <td class="py-3 font-medium text-slate-900">Employee ID</td>
+                            <td class="py-3 text-slate-600">Text</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded-full">Required</span></td>
+                            <td class="py-3 font-mono text-xs text-slate-600">^EMP-\d{6}$</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 font-medium text-slate-900">Country</td>
+                            <td class="py-3 text-slate-600">Dropdown</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded-full">Required</span></td>
+                            <td class="py-3 text-slate-600">ISO 3166-1</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 font-medium text-slate-900">State/Province</td>
+                            <td class="py-3 text-slate-600">Conditional</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-warning-100 text-warning-700 text-xs font-medium rounded-full">Conditional</span></td>
+                            <td class="py-3 text-slate-600">Required if USA/CAN</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Client Logic Note -->
+                <div class="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-slate-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                        <div>
+                            <p class="font-medium text-slate-900 text-sm">Client-Specific Logic Extension</p>
+                            <p class="text-xs text-slate-600 mt-1">Post-import cleaning logic can be stored and executed independently of core template rules. Configure in the 'Client Logic' tab.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="closeModal('settings')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
+                <button onclick="closeModal('settings')" class="btn-press px-5 py-2 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional JS for modals -->
+<script>
+// File upload handling
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('upload-dropzone');
+    const fileInput = document.getElementById('template-file');
+    const selectedFile = document.getElementById('selected-file');
+    
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-isw-blue-500', 'bg-isw-blue-50');
+        });
+        
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showSelectedFile(e.dataTransfer.files[0].name);
+            }
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                showSelectedFile(fileInput.files[0].name);
+            }
+        });
+    }
+    
+    function showSelectedFile(name) {
+        selectedFile.textContent = '✓ ' + name;
+        selectedFile.classList.remove('hidden');
+    }
+});
+
+// Create template (demo - adds to list)
+function createTemplate() {
+    const name = document.getElementById('new-template-name').value || 'New Template';
+    const type = document.getElementById('new-template-type').value || 'parts';
+    
+    // Type config
+    const typeConfig = {
+        parts: { label: 'Participants', color: 'purple', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+        txn: { label: 'Transactions', color: 'emerald', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
+        rsu: { label: 'RSU Awards', color: 'isw-blue', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+        espp: { label: 'ESPP', color: 'success', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+    };
+    
+    const config = typeConfig[type];
+    const templateId = 'template-' + Date.now();
+    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    // Hide empty state
+    document.getElementById('empty-state')?.classList.add('hidden');
+    document.getElementById('pagination')?.classList.remove('hidden');
+    
+    // Create row HTML
+    const rowHtml = `
+        <div class="card-interactive grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 cursor-pointer" onclick="selectTemplate('${templateId}')">
+            <div class="col-span-5 flex items-center gap-3">
+                <div class="w-10 h-10 bg-${config.color}-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-${config.color}-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${config.icon}"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-slate-900">${name}</h3>
+                    <p class="text-sm text-slate-500">Created just now</p>
+                </div>
+            </div>
+            <div class="col-span-2"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-${config.color}-100 text-${config.color}-700">${config.label}</span></div>
+            <div class="col-span-2 text-sm text-slate-600">${today}</div>
+            <div class="col-span-1"><span class="inline-flex items-center gap-1.5"><span class="status-dot status-active"></span><span class="text-sm text-slate-600">Active</span></span></div>
+            <div class="col-span-2 flex justify-end"><button class="p-2 text-slate-500 hover:text-isw-blue-600 hover:bg-isw-blue-50 rounded-lg" onclick="event.stopPropagation(); openModal('settings');"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button></div>
+        </div>
+    `;
+    
+    // Insert at top of list
+    const list = document.getElementById('template-list');
+    list.insertAdjacentHTML('afterbegin', rowHtml);
+    
+    // Update count
+    const rows = list.querySelectorAll('.card-interactive').length;
+    document.getElementById('showing-range').textContent = `1-${rows}`;
+    document.getElementById('total-count').textContent = rows;
+    
+    // Close modal and reset form
+    closeModal('smart-upload');
+    document.getElementById('new-template-name').value = '';
+    document.getElementById('new-template-type').value = '';
+    document.getElementById('selected-file').classList.add('hidden');
+}
+</script>
+
+<script>
+function showPage(name){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+name)?.classList.add('active');
+    document.getElementById('breadcrumb-sep').classList.toggle('hidden',name!=='validation');
+    document.getElementById('breadcrumb-cur').classList.toggle('hidden',name!=='validation');
+}
+function selectTemplate(id){ showPage('validation'); }
+function openModal(id){ document.getElementById('modal-'+id)?.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+function closeModal(id){ document.getElementById('modal-'+id)?.classList.add('hidden'); document.body.style.overflow=''; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('[id^="modal-"]').forEach(m=>m.classList.add('hidden')); document.body.style.overflow=''; }});
+function runAutoFix(btn){ const o=btn.innerHTML; btn.innerHTML='<svg class="w-5 h-5 spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Processing...</span>'; btn.disabled=true; setTimeout(()=>{ btn.innerHTML=o; btn.disabled=false; alert('Auto-fix complete!'); },2000); }
+</script>
+</body>
+</html>
