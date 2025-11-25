@@ -21,8 +21,22 @@ async function createTemplate() {
     const typeInput = document.getElementById('new-template-type');
     const fileInput = document.getElementById('template-file');
     
-    const name = nameInput.value.trim() || 'New Template';
-    const type = typeInput.value || 'other';
+    const name = nameInput.value.trim();
+    const type = typeInput.value;
+    
+    // Validation - require name and type
+    if (!name) {
+        showToast('Please enter a template name', 'error');
+        nameInput.focus();
+        return;
+    }
+    
+    if (!type) {
+        showToast('Please select a template type', 'error');
+        typeInput.focus();
+        return;
+    }
+
     const file = fileInput.files[0];
     
     // Generate unique ID
@@ -154,16 +168,23 @@ function addTemplateToList(template) {
                     <span class="text-sm text-slate-600">Active</span>
                 </span>
             </div>
-            <div class="col-span-2 flex justify-end gap-2">
-                <button class="p-2 text-slate-500 hover:text-isw-blue-600 hover:bg-isw-blue-50 rounded-lg" 
-                        onclick="event.stopPropagation(); openTemplateSettings('${template.id}');"
-                        title="Settings">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                </button>
-            </div>
+            <div class="col-span-2 flex justify-end gap-1">
+    <button class="p-2 text-slate-500 hover:text-isw-blue-600 hover:bg-isw-blue-50 rounded-lg" 
+            onclick="event.stopPropagation(); openTemplateSettings('${template.id}');"
+            title="Settings">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+    </button>
+    <button class="p-2 text-slate-500 hover:text-error-600 hover:bg-error-50 rounded-lg" 
+            onclick="event.stopPropagation(); deleteTemplate('${template.id}', '${template.name.replace(/'/g, "\\'")}');"
+            title="Delete">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+    </button>
+</div>
         </div>
     `;
     
@@ -250,9 +271,10 @@ function populateRulesTable(columns) {
 
 function getRequirementBadgeClass(requirement) {
     switch (requirement) {
-        case 'required': return 'bg-success-100 text-success-700';
-        case 'conditional': return 'bg-warning-100 text-warning-700';
-        default: return 'bg-slate-100 text-slate-600';
+        case 'required': return 'bg-error-100 text-error-700';      // Light red
+        case 'conditional': return 'bg-warning-100 text-warning-700';   // Light yellow
+        case 'optional': return 'bg-isw-blue-100 text-isw-blue-700';    // Light blue
+        default: return 'bg-isw-blue-100 text-isw-blue-700';            // Light blue for unknown
     }
 }
 
@@ -353,4 +375,64 @@ function showToast(message, type = 'info') {
         toast.style.transition = 'all 0.3s';
         setTimeout(() => toast.remove(), 300);
     }, 5000);
+}
+// ============================================================
+// DELETE TEMPLATE
+// ============================================================
+
+// Store pending delete info
+let pendingDeleteId = null;
+let pendingDeleteName = null;
+
+function deleteTemplate(templateId, templateName) {
+    // Store the template info for confirmation
+    pendingDeleteId = templateId;
+    pendingDeleteName = templateName;
+    
+    // Update modal with template name
+    document.getElementById('delete-template-name').textContent = templateName;
+    
+    // Show confirmation modal
+    openModal('delete-confirm');
+}
+
+function confirmDeleteTemplate() {
+    if (!pendingDeleteId) return;
+    
+    const templateId = pendingDeleteId;
+    const templateName = pendingDeleteName;
+    
+    // Clear pending
+    pendingDeleteId = null;
+    pendingDeleteName = null;
+    
+    // Close modal
+    closeModal('delete-confirm');
+    
+    // Remove from store
+    templateStore.delete(templateId);
+    
+    // Remove from UI with animation
+    const row = document.querySelector(`[data-template-id="${templateId}"]`);
+    if (row) {
+        row.style.transition = 'opacity 0.3s, transform 0.3s';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+            row.remove();
+            
+            const list = document.getElementById('template-list');
+            const remainingRows = list.querySelectorAll('.card-interactive').length;
+            
+            if (remainingRows === 0) {
+                document.getElementById('empty-state')?.classList.remove('hidden');
+                document.getElementById('pagination')?.classList.add('hidden');
+            } else {
+                document.getElementById('showing-range').textContent = `1-${remainingRows}`;
+                document.getElementById('total-count').textContent = remainingRows;
+            }
+        }, 300);
+    }
+    
+    showToast(`"${templateName}" deleted`, 'info');
 }
