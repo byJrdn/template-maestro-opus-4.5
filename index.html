@@ -563,17 +563,6 @@ HANDSONTABLE INTEGRATION NOTES:
 </div>
 
 <!-- Template Settings Modal -->
-<div id="modal-settings" class="fixed inset-0 z-50 hidden"><!-- 
-  UPDATED TEMPLATE SETTINGS MODAL
-  
-  Replace your existing modal-settings div with this version.
-  Features:
-  - Visual Rules tab (table view)
-  - JSON Editor tab (raw JSON editing)
-  - Tab switching functionality
--->
-
-<!-- Template Settings Modal -->
 <div id="modal-settings" class="fixed inset-0 z-50 hidden">
     <div class="modal-overlay absolute inset-0" onclick="closeModal('settings')"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
@@ -901,81 +890,7 @@ function updateSettingsSummary(template) {
     document.getElementById('summary-validations').textContent = s.columnsWithValidation;
 }
 </script>
-    <div class="modal-overlay absolute inset-0" onclick="closeModal('settings')"></div>
-    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-hidden flex flex-col">
-            
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h2 class="font-display font-semibold text-lg text-slate-900">Template Settings</h2>
-                <p id="settings-template-name" class="text-sm text-slate-500">Template Name</p>
-            </div>
-            
-            <!-- Tabs -->
-            <div class="px-6 border-b border-slate-200">
-                <nav class="flex gap-6">
-                    <button class="py-3 text-sm font-medium text-isw-blue-600 border-b-2 border-isw-blue-600">Validation Rules</button>
-                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Visual Cues</button>
-                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Auto-Fix Rules</button>
-                    <button class="py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">Client Logic</button>
-                </nav>
-            </div>
-            
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto px-6 py-4">
-                
-                <!-- Validation Rules Table -->
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200">
-                            <th class="text-left py-2 font-medium text-slate-600">Field</th>
-                            <th class="text-left py-2 font-medium text-slate-600">Type</th>
-                            <th class="text-left py-2 font-medium text-slate-600">Required</th>
-                            <th class="text-left py-2 font-medium text-slate-600">Validation</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr>
-                            <td class="py-3 font-medium text-slate-900">Employee ID</td>
-                            <td class="py-3 text-slate-600">Text</td>
-                            <td class="py-3"><span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded-full">Required</span></td>
-                            <td class="py-3 font-mono text-xs text-slate-600">^EMP-\d{6}$</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3 font-medium text-slate-900">Country</td>
-                            <td class="py-3 text-slate-600">Dropdown</td>
-                            <td class="py-3"><span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded-full">Required</span></td>
-                            <td class="py-3 text-slate-600">ISO 3166-1</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3 font-medium text-slate-900">State/Province</td>
-                            <td class="py-3 text-slate-600">Conditional</td>
-                            <td class="py-3"><span class="px-2 py-0.5 bg-warning-100 text-warning-700 text-xs font-medium rounded-full">Conditional</span></td>
-                            <td class="py-3 text-slate-600">Required if USA/CAN</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <!-- Client Logic Note -->
-                <div class="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <div class="flex items-start gap-3">
-                        <svg class="w-5 h-5 text-slate-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                        <div>
-                            <p class="font-medium text-slate-900 text-sm">Client-Specific Logic Extension</p>
-                            <p class="text-xs text-slate-600 mt-1">Post-import cleaning logic can be stored and executed independently of core template rules. Configure in the 'Client Logic' tab.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-                <button onclick="closeModal('settings')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
-                <button onclick="closeModal('settings')" class="btn-press px-5 py-2 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 <!-- DATA UPLOAD MODAL - Add to 04-modals.html or paste with other modals -->
 
 <div id="modal-data-upload" class="fixed inset-0 z-50 hidden">
