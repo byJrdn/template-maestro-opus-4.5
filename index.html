@@ -1051,7 +1051,6 @@ function showPage(name){
     document.getElementById('breadcrumb-sep').classList.toggle('hidden',name!=='validation');
     document.getElementById('breadcrumb-cur').classList.toggle('hidden',name!=='validation');
 }
-function selectTemplate(id){ showPage('validation'); }
 function openModal(id){ document.getElementById('modal-'+id)?.classList.remove('hidden'); document.body.style.overflow='hidden'; }
 function closeModal(id){ document.getElementById('modal-'+id)?.classList.add('hidden'); document.body.style.overflow=''; }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('[id^="modal-"]').forEach(m=>m.classList.add('hidden')); document.body.style.overflow=''; }});
