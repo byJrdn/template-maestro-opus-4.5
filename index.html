@@ -109,10 +109,15 @@
             </div>
             <select id="filter-type" class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[140px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
                 <option value="">All Types</option>
+                <option value="accounting">Accounting</option>
                 <option value="espp">ESPP</option>
-                <option value="rsu">RSU Awards</option>
-                <option value="txn">Transactions</option>
-                <option value="parts">Participants</option>
+                <option value="grant-attribute">Grant Attribute</option>
+                <option value="other">Other</option>
+                <option value="participant">Participant</option>
+                <option value="participant-attribute">Participant Attribute</option>
+                <option value="section-16">Section 16</option>
+                <option value="transaction">Transaction</option>
+                <option value="transaction-attribute">Transaction Attribute</option>
             </select>
             <select id="filter-status" class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[130px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
                 <option value="">All Status</option>
@@ -479,10 +484,15 @@ HANDSONTABLE INTEGRATION NOTES:
                     <label for="new-template-type" class="block text-sm font-medium text-slate-700 mb-2">Template Type</label>
                     <select id="new-template-type" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
                         <option value="">Select type...</option>
-                        <option value="parts">Participants</option>
-                        <option value="txn">Transactions</option>
-                        <option value="rsu">RSU Awards</option>
+                        <option value="accounting">Accounting</option>
                         <option value="espp">ESPP</option>
+                        <option value="grant-attribute">Grant Attribute</option>
+                        <option value="other">Other</option>
+                        <option value="participant">Participant</option>
+                        <option value="participant-attribute">Participant Attribute</option>
+                        <option value="section-16">Section 16</option>
+                        <option value="transaction">Transaction</option>
+                        <option value="transaction-attribute">Transaction Attribute</option>
                     </select>
                 </div>
             </div>
@@ -628,7 +638,308 @@ HANDSONTABLE INTEGRATION NOTES:
         </div>
     </div>
 </div>
+<!-- DATA UPLOAD MODAL - Add to 04-modals.html or paste with other modals -->
 
+<div id="modal-data-upload" class="fixed inset-0 z-50 hidden">
+    <div class="modal-overlay absolute inset-0" onclick="closeModal('data-upload')"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-lg pointer-events-auto">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-isw-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-isw-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="font-display font-semibold text-lg text-slate-900">Upload Data for Validation</h2>
+                        <p id="upload-template-context" class="text-sm text-slate-500">Template: --</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Template Info Banner -->
+            <div class="mx-6 mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="text-slate-600">Expected columns:</span>
+                        <span id="expected-columns" class="font-medium text-slate-900">18</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <span class="text-slate-600">Validation rules:</span>
+                        <span id="validation-rules-count" class="font-medium text-slate-900">24</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upload Area -->
+            <div class="px-6 py-4">
+                <div id="data-upload-dropzone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-isw-blue-400 hover:bg-isw-blue-50 transition-all cursor-pointer group">
+                    <input type="file" id="data-file-input" class="hidden" accept=".xlsx,.xls,.csv,.txt">
+                    
+                    <!-- Default state -->
+                    <div id="dropzone-default" class="space-y-3">
+                        <div class="w-16 h-16 bg-slate-100 group-hover:bg-isw-blue-100 rounded-full flex items-center justify-center mx-auto transition-colors">
+                            <svg class="w-8 h-8 text-slate-400 group-hover:text-isw-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-base text-slate-700 font-medium">Drop your data file here</p>
+                            <p class="text-sm text-slate-500 mt-1">or <span class="text-isw-blue-600 font-medium hover:underline">browse from your computer</span></p>
+                        </div>
+                        <div class="flex items-center justify-center gap-4 text-xs text-slate-400">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                .xlsx
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                .xls
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                .csv
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                .txt
+                            </span>
+                            <span>Max 50MB</span>
+                        </div>
+                    </div>
+                    
+                    <!-- File selected state -->
+                    <div id="dropzone-selected" class="hidden space-y-3">
+                        <div class="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto">
+                            <svg class="w-8 h-8 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <div>
+                            <p id="selected-data-filename" class="text-base text-slate-900 font-semibold">filename.xlsx</p>
+                            <p id="selected-data-size" class="text-sm text-slate-500">2.4 MB</p>
+                        </div>
+                        <button type="button" onclick="clearDataFile(event)" class="text-sm text-error-600 hover:text-error-700 font-medium">Remove and choose different file</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-2xl flex justify-between items-center">
+                <button onclick="closeModal('data-upload'); showPage('templates');" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
+                <div class="flex items-center gap-3">
+                    <button onclick="skipDataUpload()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg transition-colors">Skip for Now</button>
+                    <button id="btn-validate" onclick="startValidation()" disabled class="btn-press inline-flex items-center gap-2 px-5 py-2 bg-success-600 hover:bg-success-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-sm transition-all">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                        Validate Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Upload Modal JS -->
+<script>
+// Current template context
+let currentTemplateId = null;
+let currentTemplateName = null;
+let selectedDataFile = null;
+
+// Update selectTemplate to show data upload modal
+function selectTemplate(templateId, templateName) {
+    currentTemplateId = templateId;
+    currentTemplateName = templateName || 'Selected Template';
+    
+    // Update modal context
+    document.getElementById('upload-template-context').textContent = 'Template: ' + currentTemplateName;
+    
+    // Reset file selection
+    clearDataFile();
+    
+    // Show data upload modal
+    openModal('data-upload');
+}
+
+// Data upload dropzone handling
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('data-upload-dropzone');
+    const fileInput = document.getElementById('data-file-input');
+    
+    if (dropzone && fileInput) {
+        // Click to browse
+        dropzone.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return; // Ignore if clicking remove button
+            fileInput.click();
+        });
+        
+        // Drag over
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-isw-blue-500', 'bg-isw-blue-50');
+            dropzone.classList.remove('border-slate-300');
+        });
+        
+        // Drag leave
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');
+            dropzone.classList.add('border-slate-300');
+        });
+        
+        // Drop
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');
+            dropzone.classList.add('border-slate-300');
+            
+            if (e.dataTransfer.files.length) {
+                handleDataFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // File input change
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                handleDataFile(fileInput.files[0]);
+            }
+        });
+    }
+});
+
+function handleDataFile(file) {
+    // Validate file type
+    const validTypes = ['.xlsx', '.xls', '.csv', '.txt'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!validTypes.includes(ext)) {
+        alert('Invalid file type. Please upload .xlsx, .xls, .csv, or .txt files.');
+        return;
+    }
+    
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+        alert('File too large. Maximum size is 50MB.');
+        return;
+    }
+    
+    selectedDataFile = file;
+    
+    // Update UI
+    document.getElementById('dropzone-default').classList.add('hidden');
+    document.getElementById('dropzone-selected').classList.remove('hidden');
+    document.getElementById('selected-data-filename').textContent = file.name;
+    document.getElementById('selected-data-size').textContent = formatFileSize(file.size);
+    
+    // Enable validate button
+    document.getElementById('btn-validate').disabled = false;
+}
+
+function clearDataFile(e) {
+    if (e) e.stopPropagation();
+    
+    selectedDataFile = null;
+    document.getElementById('data-file-input').value = '';
+    
+    // Update UI
+    document.getElementById('dropzone-default').classList.remove('hidden');
+    document.getElementById('dropzone-selected').classList.add('hidden');
+    
+    // Disable validate button
+    document.getElementById('btn-validate').disabled = true;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function skipDataUpload() {
+    closeModal('data-upload');
+    showPage('validation');
+    
+    // Update validation page header
+    document.getElementById('validation-template-name').textContent = currentTemplateName;
+    document.getElementById('validation-file-info').textContent = 'No data file loaded';
+}
+
+function startValidation() {
+    if (!selectedDataFile) return;
+    
+    // Close modal
+    closeModal('data-upload');
+    
+    // Show validation page
+    showPage('validation');
+    
+    // Update validation page with file info
+    document.getElementById('validation-template-name').textContent = currentTemplateName;
+    document.getElementById('validation-file-info').textContent = selectedDataFile.name + ' • Processing...';
+    
+    // Simulate validation processing
+    simulateValidation();
+}
+
+function simulateValidation() {
+    // Simulate processing delay
+    setTimeout(() => {
+        // Generate random but realistic stats
+        const totalRows = Math.floor(Math.random() * 2000) + 500;
+        const errorRate = Math.random() * 0.03; // 0-3% errors
+        const warningRate = Math.random() * 0.15; // 0-15% warnings
+        
+        const errors = Math.floor(totalRows * errorRate);
+        const warnings = Math.floor(totalRows * warningRate);
+        const valid = totalRows - errors - warnings;
+        
+        const completion = Math.floor(85 + Math.random() * 15); // 85-100%
+        const trust = Math.floor(100 - (errorRate * 500) - (warningRate * 100)); // Based on error/warning rates
+        const fixable = Math.floor(errors * 0.7 + warnings * 0.4); // ~70% of errors, 40% of warnings fixable
+        
+        // Update stats
+        document.getElementById('stat-completion').textContent = completion + '%';
+        document.getElementById('stat-completion-bar').style.width = completion + '%';
+        document.getElementById('stat-completion-detail').textContent = Math.floor(totalRows * completion / 100) + ' of ' + totalRows + ' rows complete';
+        
+        document.getElementById('stat-trust').textContent = trust + '%';
+        document.getElementById('stat-trust-indicator').style.left = trust + '%';
+        
+        document.getElementById('stat-valid').textContent = valid.toLocaleString();
+        document.getElementById('stat-valid-pct').textContent = ((valid / totalRows) * 100).toFixed(1) + '% of total';
+        
+        document.getElementById('stat-warnings').textContent = warnings.toLocaleString();
+        document.getElementById('stat-warnings-pct').textContent = ((warnings / totalRows) * 100).toFixed(1) + '% of total';
+        
+        document.getElementById('stat-errors').textContent = errors.toLocaleString();
+        document.getElementById('stat-errors-pct').textContent = ((errors / totalRows) * 100).toFixed(1) + '% of total';
+        
+        document.getElementById('stat-fixable').textContent = fixable.toLocaleString();
+        
+        // Update file info
+        document.getElementById('validation-file-info').textContent = selectedDataFile.name + ' • ' + totalRows.toLocaleString() + ' rows';
+        
+        // Update grid dimensions
+        document.getElementById('grid-dimensions').textContent = totalRows.toLocaleString() + ' rows × 18 columns';
+        
+        // Update last validated
+        const now = new Date();
+        document.getElementById('last-validated').textContent = 'Last validated: ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        
+        // Hide placeholder, would show Handsontable here
+        document.getElementById('grid-placeholder').innerHTML = `
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <h3 class="font-display font-semibold text-slate-900 mb-1">Validation Complete</h3>
+                <p class="text-slate-500 text-sm mb-4">${totalRows.toLocaleString()} rows processed against ${currentTemplateName}</p>
+                <p class="text-xs text-slate-400">Handsontable grid would render here with actual data</p>
+            </div>
+        `;
+        
+    }, 1500);
+}
+</script>
 <!-- Additional JS for modals -->
 <script>
 // File upload handling
