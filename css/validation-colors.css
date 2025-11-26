@@ -1,0 +1,547 @@
+/**
+ * VALIDATION COLORS CSS
+ * 
+ * Styling for validation states: error (red), warning (yellow), valid (white), complete (green)
+ * Also includes Handsontable customizations and requirement pills.
+ */
+
+/* ============================================================
+   VALIDATION STATE COLORS
+   ============================================================ */
+
+/* Error State - Critical issues */
+.cell-error {
+    background-color: #FFC7CE !important;
+    color: #9C0006 !important;
+}
+
+.cell-error.htInvalid {
+    background-color: #FFC7CE !important;
+}
+
+/* Warning State - Auto-fixable issues */
+.cell-warning {
+    background-color: #FFEB9C !important;
+    color: #9C6500 !important;
+}
+
+/* Valid State - Default */
+.cell-valid {
+    background-color: #FFFFFF !important;
+    color: #1A1A2E !important;
+}
+
+/* Complete Row State - All required fields filled, all validations pass */
+.cell-complete {
+    background-color: #C6EFCE !important;
+    color: #006100 !important;
+}
+
+/* ============================================================
+   ROW STATUS INDICATORS
+   ============================================================ */
+
+.row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    height: 100%;
+    font-size: 12px;
+}
+
+.row-number {
+    font-weight: 500;
+    color: #64748b;
+}
+
+.row-status-icon {
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+.row-status-valid .row-status-icon {
+    color: #2E7D32;
+}
+
+.row-status-warning .row-status-icon {
+    color: #F9A825;
+}
+
+.row-status-error .row-status-icon {
+    color: #C62828;
+}
+
+/* ============================================================
+   COLUMN HEADER STYLING
+   ============================================================ */
+
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 4px 8px;
+    width: 100%;
+}
+
+.header-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Requirement Pills */
+.requirement-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.pill-required {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
+.pill-conditional {
+    background-color: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+
+.pill-optional {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+    border: 1px solid #BFDBFE;
+}
+
+/* ============================================================
+   HANDSONTABLE OVERRIDES
+   ============================================================ */
+
+/* Container styling */
+#handsontable-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 0;
+}
+
+/* Headers */
+.handsontable th {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.handsontable thead th {
+    padding: 8px 4px !important;
+    text-align: left !important;
+}
+
+/* Row headers */
+.handsontable th.ht__highlight,
+.handsontable th.htNoFrame {
+    background: #f1f5f9 !important;
+}
+
+/* Cells */
+.handsontable td {
+    border-color: #e2e8f0 !important;
+    font-family: 'Source Sans 3', sans-serif !important;
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+    vertical-align: middle !important;
+}
+
+/* Selected cells */
+.handsontable td.current,
+.handsontable td.area {
+    background-color: rgba(44, 62, 104, 0.1) !important;
+}
+
+/* Focused cell */
+.handsontable .wtBorder.current {
+    border-color: #2C3E68 !important;
+}
+
+/* Invalid cells (Handsontable native) */
+.handsontable td.htInvalid:not(.cell-error):not(.cell-warning) {
+    background-color: #FFC7CE !important;
+}
+
+/* Comments indicator */
+.handsontable td.htCommentCell::after {
+    border-color: transparent #F9A825 transparent transparent !important;
+}
+
+/* Dropdown arrow */
+.handsontable .htAutocompleteArrow {
+    color: #64748b !important;
+}
+
+/* Date picker */
+.htDatepickerHolder {
+    z-index: 9999 !important;
+}
+
+/* Scrollbar styling */
+.handsontable ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.handsontable ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.handsontable ::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+
+.handsontable ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* ============================================================
+   ROW BORDERS FOR STATUS
+   ============================================================ */
+
+.row-valid td:first-child {
+    border-left: 3px solid #2E7D32 !important;
+}
+
+.row-warning td:first-child {
+    border-left: 3px solid #F9A825 !important;
+}
+
+.row-error td:first-child {
+    border-left: 3px solid #C62828 !important;
+}
+
+/* ============================================================
+   STATISTICS SPANNER STYLING
+   ============================================================ */
+
+.stat-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+/* Trust Score Gradient Bar */
+.trust-gradient {
+    background: linear-gradient(90deg, #C62828 0%, #F9A825 50%, #2E7D32 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+}
+
+.trust-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: left 0.3s ease;
+}
+
+/* Completion Progress Bar */
+.completion-bar {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.completion-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2C3E68, #3B82F6);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* ============================================================
+   ACTION BAR STYLING
+   ============================================================ */
+
+.action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-divider {
+    width: 1px;
+    height: 32px;
+    background: #e2e8f0;
+    margin: 0 4px;
+}
+
+/* ============================================================
+   FILTER BADGES
+   ============================================================ */
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-badge-all {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-badge-all:hover,
+.filter-badge-all.active {
+    background: #2C3E68;
+    color: white;
+    border-color: #2C3E68;
+}
+
+.filter-badge-valid {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+.filter-badge-valid:hover,
+.filter-badge-valid.active {
+    background: #2E7D32;
+    color: white;
+    border-color: #2E7D32;
+}
+
+.filter-badge-warning {
+    background: #FEF9C3;
+    color: #854D0E;
+    border: 1px solid #FEF08A;
+}
+
+.filter-badge-warning:hover,
+.filter-badge-warning.active {
+    background: #F9A825;
+    color: white;
+    border-color: #F9A825;
+}
+
+.filter-badge-error {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
+.filter-badge-error:hover,
+.filter-badge-error.active {
+    background: #C62828;
+    color: white;
+    border-color: #C62828;
+}
+
+/* ============================================================
+   AUTO-FIX PREVIEW MODAL
+   ============================================================ */
+
+.autofix-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.autofix-preview-table th {
+    background: #f8fafc;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.autofix-preview-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.autofix-preview-table tr:hover {
+    background: #f8fafc;
+}
+
+.autofix-before {
+    color: #991B1B;
+    background: #FEE2E2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+}
+
+.autofix-after {
+    color: #166534;
+    background: #DCFCE7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+}
+
+.autofix-arrow {
+    color: #64748b;
+    padding: 0 8px;
+}
+
+/* ============================================================
+   TOOLTIP STYLING
+   ============================================================ */
+
+.validation-tooltip {
+    position: absolute;
+    background: #1e293b;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    max-width: 300px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+.validation-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px 6px 0;
+    border-style: solid;
+    border-color: #1e293b transparent transparent;
+}
+
+.validation-tooltip-error {
+    border-left: 3px solid #C62828;
+}
+
+.validation-tooltip-warning {
+    border-left: 3px solid #F9A825;
+}
+
+/* ============================================================
+   LOADING STATES
+   ============================================================ */
+
+.grid-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    gap: 16px;
+}
+
+.grid-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #2C3E68;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.grid-loading-text {
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+
+@media (max-width: 768px) {
+    .action-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .action-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .action-divider {
+        display: none;
+    }
+    
+    .stat-card {
+        min-width: 140px;
+    }
+}
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+
+@media print {
+    .cell-error {
+        background-color: #FFC7CE !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .cell-warning {
+        background-color: #FFEB9C !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .cell-complete {
+        background-color: #C6EFCE !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
