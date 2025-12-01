@@ -12,6 +12,12 @@
 // In-memory template storage (would be backend API in production)
 const templateStore = new Map();
 
+// Expose helper to get rules
+window.getTemplateRules = function (templateId) {
+    const template = templateStore.get(templateId);
+    return template ? template.rules : null;
+};
+
 // ============================================================
 // CREATE TEMPLATE WITH RULE EXTRACTION
 // ============================================================
@@ -20,17 +26,17 @@ async function createTemplate() {
     const nameInput = document.getElementById('new-template-name');
     const typeInput = document.getElementById('new-template-type');
     const fileInput = document.getElementById('template-file');
-    
+
     const name = nameInput.value.trim();
     const type = typeInput.value;
-    
+
     // Validation - require name and type
     if (!name) {
         showToast('Please enter a template name', 'error');
         nameInput.focus();
         return;
     }
-    
+
     if (!type) {
         showToast('Please select a template type', 'error');
         typeInput.focus();
@@ -38,10 +44,10 @@ async function createTemplate() {
     }
 
     const file = fileInput.files[0];
-    
+
     // Generate unique ID
     const templateId = 'template-' + Date.now();
-    
+
     // Show loading state
     const uploadBtn = document.querySelector('#modal-smart-upload button[onclick="createTemplate()"]');
     const originalBtnText = uploadBtn.innerHTML;
@@ -52,11 +58,11 @@ async function createTemplate() {
         <span>Analyzing...</span>
     `;
     uploadBtn.disabled = true;
-    
+
     try {
         let extractedRules = null;
         let ruleSummary = null;
-        
+
         // Extract rules if file provided
         if (file) {
             console.log('Extracting rules from:', file.name);
@@ -65,7 +71,7 @@ async function createTemplate() {
             console.log('Extracted rules:', extractedRules);
             console.log('Summary:', ruleSummary);
         }
-        
+
         // Create template object
         const template = {
             id: templateId,
@@ -78,27 +84,27 @@ async function createTemplate() {
             rules: extractedRules,
             ruleSummary: ruleSummary
         };
-        
+
         // Store template
         templateStore.set(templateId, template);
-        
+
         // Add to UI list
         addTemplateToList(template);
-        
+
         // Close modal and reset form
         closeModal('smart-upload');
         nameInput.value = '';
         typeInput.value = '';
         fileInput.value = '';
         document.getElementById('selected-file').classList.add('hidden');
-        
+
         // Show success message with summary
         if (ruleSummary) {
             showToast(`Template created! Extracted ${ruleSummary.totalColumns} columns, ${ruleSummary.requiredColumns} required fields, ${ruleSummary.columnsWithValidation} validation rules.`, 'success');
         } else {
             showToast('Template created successfully.', 'success');
         }
-        
+
     } catch (error) {
         console.error('Error creating template:', error);
         showToast('Error analyzing template: ' + error.message, 'error');
@@ -126,20 +132,20 @@ function addTemplateToList(template) {
         'transaction': { label: 'Transaction', color: 'emerald', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
         'transaction-attribute': { label: 'Transaction Attr', color: 'teal', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' }
     };
-    
+
     const config = typeConfig[template.type] || typeConfig['other'];
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
+
     // Build description with rule summary
     let description = 'Created just now';
     if (template.ruleSummary) {
         description = `${template.ruleSummary.totalColumns} columns, ${template.ruleSummary.requiredColumns} required`;
     }
-    
+
     // Hide empty state
     document.getElementById('empty-state')?.classList.add('hidden');
     document.getElementById('pagination')?.classList.remove('hidden');
-    
+
     // Create row HTML
     const rowHtml = `
         <div class="card-interactive grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 cursor-pointer" 
@@ -187,11 +193,11 @@ function addTemplateToList(template) {
 </div>
         </div>
     `;
-    
+
     // Insert at top of list
     const list = document.getElementById('template-list');
     list.insertAdjacentHTML('afterbegin', rowHtml);
-    
+
     // Update count
     const rows = list.querySelectorAll('.card-interactive').length;
     document.getElementById('showing-range').textContent = `1-${rows}`;
@@ -208,13 +214,13 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
         showToast('Template not found', 'error');
         return;
     }
-    
+
     // Store current template ID for saving
     window.currentSettingsTemplateId = templateId;
-    
+
     // Update modal header
     document.getElementById('settings-template-name').textContent = template.name;
-    
+
     // Update summary cards
     if (template.ruleSummary) {
         document.getElementById('summary-total').textContent = template.ruleSummary.totalColumns || '--';
@@ -222,12 +228,12 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
         document.getElementById('summary-conditional').textContent = template.ruleSummary.conditionalColumns || '--';
         document.getElementById('summary-validations').textContent = template.ruleSummary.columnsWithValidation || '--';
     }
-    
+
     // Populate rules table if we have extracted rules
     if (template.rules && template.rules.columns) {
         populateRulesTable(template.rules.columns);
     }
-    
+
     // Populate JSON editor
     if (template.rules) {
         const jsonEditor = document.getElementById('rules-json-editor');
@@ -235,10 +241,10 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
             jsonEditor.value = JSON.stringify(template.rules, null, 2);
         }
     }
-    
+
     // Open modal
     openModal('settings');
-    
+
     // Switch to requested tab
     if (activeTab) {
         switchSettingsTab(activeTab);
@@ -252,7 +258,7 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
 function populateRulesTable(columns) {
     const tbody = document.getElementById('rules-table-body');
     if (!tbody) return;
-    
+
     tbody.innerHTML = columns.map(col => `
         <tr>
             <td class="px-4 py-3 font-medium text-slate-900">${col.fieldName}</td>
@@ -291,12 +297,12 @@ function switchSettingsTab(tabName) {
         btn.classList.toggle('text-slate-500', !isActive);
         btn.classList.toggle('border-transparent', !isActive);
     });
-    
+
     // Update tab content
     document.querySelectorAll('#modal-settings .tab-content').forEach(content => {
         content.classList.add('hidden');
     });
-    
+
     const activeContent = document.getElementById(`tab-${tabName}`);
     if (activeContent) {
         activeContent.classList.remove('hidden');
@@ -310,30 +316,30 @@ function switchSettingsTab(tabName) {
 function saveRulesFromJSON() {
     const templateId = window.currentSettingsTemplateId;
     const template = templateStore.get(templateId);
-    
+
     if (!template) {
         showToast('Template not found', 'error');
         return;
     }
-    
+
     const jsonEditor = document.getElementById('rules-json-editor');
     if (!jsonEditor) return;
-    
+
     try {
         const updatedRules = JSON.parse(jsonEditor.value);
         template.rules = updatedRules;
         template.ruleSummary = generateRuleSummary(updatedRules);
         template.updatedAt = new Date().toISOString();
-        
+
         templateStore.set(templateId, template);
-        
+
         showToast('Rules saved successfully!', 'success');
-        
+
         // Refresh the rules table
         if (updatedRules.columns) {
             populateRulesTable(updatedRules.columns);
         }
-        
+
         // Update summary cards
         if (template.ruleSummary) {
             document.getElementById('summary-total').textContent = template.ruleSummary.totalColumns || '--';
@@ -341,7 +347,7 @@ function saveRulesFromJSON() {
             document.getElementById('summary-conditional').textContent = template.ruleSummary.conditionalColumns || '--';
             document.getElementById('summary-validations').textContent = template.ruleSummary.columnsWithValidation || '--';
         }
-        
+
     } catch (e) {
         showToast('Invalid JSON: ' + e.message, 'error');
     }
@@ -354,20 +360,20 @@ function saveRulesFromJSON() {
 function showToast(message, type = 'info') {
     // Remove existing toasts
     document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-    
+
     const colors = {
         success: 'bg-success-600',
         error: 'bg-error-600',
         warning: 'bg-warning-600',
         info: 'bg-isw-blue-600'
     };
-    
+
     const toast = document.createElement('div');
     toast.className = `toast-notification fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-scale-in`;
     toast.textContent = message;
-    
+
     document.body.appendChild(toast);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -388,30 +394,30 @@ function deleteTemplate(templateId, templateName) {
     // Store the template info for confirmation
     pendingDeleteId = templateId;
     pendingDeleteName = templateName;
-    
+
     // Update modal with template name
     document.getElementById('delete-template-name').textContent = templateName;
-    
+
     // Show confirmation modal
     openModal('delete-confirm');
 }
 
 function confirmDeleteTemplate() {
     if (!pendingDeleteId) return;
-    
+
     const templateId = pendingDeleteId;
     const templateName = pendingDeleteName;
-    
+
     // Clear pending
     pendingDeleteId = null;
     pendingDeleteName = null;
-    
+
     // Close modal
     closeModal('delete-confirm');
-    
+
     // Remove from store
     templateStore.delete(templateId);
-    
+
     // Remove from UI with animation
     const row = document.querySelector(`[data-template-id="${templateId}"]`);
     if (row) {
@@ -420,10 +426,10 @@ function confirmDeleteTemplate() {
         row.style.transform = 'translateX(20px)';
         setTimeout(() => {
             row.remove();
-            
+
             const list = document.getElementById('template-list');
             const remainingRows = list.querySelectorAll('.card-interactive').length;
-            
+
             if (remainingRows === 0) {
                 document.getElementById('empty-state')?.classList.remove('hidden');
                 document.getElementById('pagination')?.classList.add('hidden');
@@ -433,6 +439,6 @@ function confirmDeleteTemplate() {
             }
         }, 300);
     }
-    
+
     showToast(`"${templateName}" deleted`, 'info');
 }

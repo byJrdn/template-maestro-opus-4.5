@@ -1387,6 +1387,16 @@ HANDSONTABLE INTEGRATION NOTES:
             currentTemplateId = templateId;
             currentTemplateName = templateName || 'Selected Template';
 
+            // ---------------------------------------------------------
+            // NEW: Retrieve and store template rules for validation
+            // ---------------------------------------------------------
+            if (window.getTemplateRules) {
+                window.currentTemplateRules = window.getTemplateRules(templateId);
+                console.log('📋 Loaded rules for template:', currentTemplateName, window.currentTemplateRules);
+            } else {
+                console.error('❌ getTemplateRules not found');
+            }
+
             // Update modal context
             document.getElementById('upload-template-context').textContent = 'Template: ' + currentTemplateName;
 
@@ -1522,17 +1532,95 @@ HANDSONTABLE INTEGRATION NOTES:
                     const structuredData = DataUpload.prepareDataForValidation(parsedData);
                     console.log('✅ Data structured for validation:', structuredData);
 
-                    // Store for later use
-                    window.currentValidationData = structuredData;
+                    // ---------------------------------------------------------
+                    // NEW: Run Validation Engine
+                    // ---------------------------------------------------------
+                    if (window.currentTemplateRules) {
+                        console.log('🔍 Running validation engine...');
+                        const validatedData = ValidationEngine.validateDataset(structuredData, window.currentTemplateRules);
+                        console.log('✅ Validation complete:', validatedData);
 
-                    // Update UI with real data
-                    displayParsedData(structuredData);
+                        // Store for later use
+                        window.currentValidationData = validatedData;
+
+                        // Update UI with real validation stats
+                        displayValidationResults(validatedData);
+                    } else {
+                        console.warn('⚠️ No template rules found, skipping validation');
+                        window.currentValidationData = structuredData;
+                        displayParsedData(structuredData);
+                    }
                 })
                 .catch(error => {
                     console.error('❌ Error parsing file:', error);
                     alert('Error parsing file: ' + error.message);
                     showPage('templates');
                 });
+        }
+
+        function displayValidationResults(data) {
+            const stats = data.stats;
+            const totalRows = stats.totalRows;
+
+            // Calculate percentages
+            const validPct = ((stats.validRows / totalRows) * 100).toFixed(1);
+            const errorPct = ((stats.errorRows / totalRows) * 100).toFixed(1);
+            const warningPct = ((stats.warningRows / totalRows) * 100).toFixed(1);
+
+            // Calculate completion and trust scores
+            const completion = Math.floor((stats.validRows / totalRows) * 100);
+            const trust = Math.max(0, 100 - (stats.totalErrors * 5) - (stats.totalWarnings * 1));
+            const fixable = Math.floor(stats.totalErrors * 0.7 + stats.totalWarnings * 0.4); // Estimate
+
+            // Update stats UI
+            document.getElementById('stat-completion').textContent = completion + '%';
+            document.getElementById('stat-completion-bar').style.width = completion + '%';
+            document.getElementById('stat-completion-detail').textContent = `${stats.validRows} of ${totalRows} rows valid`;
+
+            document.getElementById('stat-trust').textContent = trust + '%';
+            document.getElementById('stat-trust-indicator').style.left = trust + '%';
+
+            document.getElementById('stat-valid').textContent = stats.validRows.toLocaleString();
+            document.getElementById('stat-valid-pct').textContent = validPct + '% of total';
+
+            document.getElementById('stat-warnings').textContent = stats.warningRows.toLocaleString();
+            document.getElementById('stat-warnings-pct').textContent = warningPct + '% of total';
+
+            document.getElementById('stat-errors').textContent = stats.errorRows.toLocaleString();
+            document.getElementById('stat-errors-pct').textContent = errorPct + '% of total';
+
+            document.getElementById('stat-fixable').textContent = fixable.toLocaleString();
+
+            // Update file info
+            document.getElementById('validation-file-info').textContent = data.fileName + ' • ' + totalRows.toLocaleString() + ' rows';
+
+            // Update grid dimensions
+            document.getElementById('grid-dimensions').textContent = totalRows.toLocaleString() + ' rows × ' + data.columnCount + ' columns';
+
+            // Update last validated
+            const now = new Date();
+            document.getElementById('last-validated').textContent = 'Last validated: ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            // Show placeholder (Handsontable coming in next step)
+            document.getElementById('grid-placeholder').innerHTML = `
+                <div class="p-8 text-center">
+                    <div class="w-16 h-16 bg-${stats.errorRows > 0 ? 'error' : 'success'}-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-${stats.errorRows > 0 ? 'error' : 'success'}-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="${stats.errorRows > 0 ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' : 'M5 13l4 4L19 7'}"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-slate-900 mb-1">Validation Complete</h3>
+                    <p class="text-slate-500 text-sm mb-4">Found ${stats.totalErrors} errors and ${stats.totalWarnings} warnings in ${totalRows} rows</p>
+                    <div class="text-left max-w-md mx-auto bg-slate-50 rounded-lg p-4 mb-4">
+                        <p class="text-xs font-mono text-slate-600 mb-2"><strong>Validation Results:</strong></p>
+                        <ul class="text-xs text-slate-600 space-y-1">
+                            <li class="flex justify-between"><span>Valid Rows:</span> <span class="font-semibold text-success-600">${stats.validRows}</span></li>
+                            <li class="flex justify-between"><span>Rows with Errors:</span> <span class="font-semibold text-error-600">${stats.errorRows}</span></li>
+                            <li class="flex justify-between"><span>Rows with Warnings:</span> <span class="font-semibold text-warning-600">${stats.warningRows}</span></li>
+                        </ul>
+                    </div>
+                </div>
+            `;
         }
 
         function displayParsedData(data) {
@@ -1677,6 +1765,7 @@ HANDSONTABLE INTEGRATION NOTES:
     </script>
     <script src="js/date-utils.js"></script>
     <script src="js/data-upload.js"></script>
+    <script src="js/validation-engine.js"></script>
     <script src="js/excel-parser.js"></script>
     <script src="js/template-manager.js"></script>
 </body>
