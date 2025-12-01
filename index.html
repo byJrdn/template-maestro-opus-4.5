@@ -1513,8 +1513,50 @@ HANDSONTABLE INTEGRATION NOTES:
             document.getElementById('validation-template-name').textContent = currentTemplateName;
             document.getElementById('validation-file-info').textContent = selectedDataFile.name + ' • Processing...';
 
-            // Simulate validation processing
-            simulateValidation();
+            // Use DataUpload module to parse the file
+            DataUpload.parseFile(selectedDataFile)
+                .then(parsedData => {
+                    console.log('✅ File parsed successfully:', parsedData);
+
+                    // Prepare data for validation
+                    const structuredData = DataUpload.prepareDataForValidation(parsedData);
+                    console.log('✅ Data structured for validation:', structuredData);
+
+                    // Store for later use
+                    window.currentValidationData = structuredData;
+
+                    // Update UI with real data
+                    displayParsedData(structuredData);
+                })
+                .catch(error => {
+                    console.error('❌ Error parsing file:', error);
+                    alert('Error parsing file: ' + error.message);
+                    showPage('templates');
+                });
+        }
+
+        function displayParsedData(data) {
+            // Update file info with actual row count
+            document.getElementById('validation-file-info').textContent =
+                data.fileName + ' • ' + data.totalRows.toLocaleString() + ' rows';
+
+            // Update grid dimensions
+            document.getElementById('grid-dimensions').textContent =
+                data.totalRows.toLocaleString() + ' rows × ' + data.columnCount + ' columns';
+
+            // Show success message (Handsontable grid will be added in Checkpoint 4)
+            document.getElementById('grid-placeholder').innerHTML = `
+        <div class="p-8 text-center">
+            <div class="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-semibold text-slate-900 mb-1">File Parsed Successfully!</h3>
+            <p class="text-slate-500 text-sm mb-4">${data.totalRows.toLocaleString()} rows × ${data.columnCount} columns</p>
+            <p class="text-xs text-slate-400">Handsontable grid will render here in Checkpoint 4</p>
+        </div>
+    `;
         }
 
         function simulateValidation() {

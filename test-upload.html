@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Upload Test</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="js/date-utils.js"></script>
+    <script src="js/data-upload.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #4CAF50;
+            background: #f9f9f9;
+        }
+
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .stat {
+            display: inline-block;
+            margin: 10px 20px 10px 0;
+            padding: 10px 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+        }
+
+        .stat strong {
+            color: #1976d2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Data Upload Module Test</h1>
+        <p>Test the DataUpload module by uploading an Excel (.xlsx, .xls) or CSV file.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p style="margin: 15px 0 5px 0; font-size: 16px; color: #333;">
+                <strong>Click to browse</strong> or drag and drop your file here
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #666;">
+                Supports: .xlsx, .xls, .csv, .txt (max 50MB)
+            </p>
+        </div>
+
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt">
+
+        <div class="results" id="results">
+            <h2 id="resultTitle"></h2>
+            <div id="stats"></div>
+            <div id="details"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize DataUpload module
+        DataUpload.initialize({ columns: [] });
+        console.log('✅ DataUpload module initialized');
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const results = document.getElementById('results');
+        const resultTitle = document.getElementById('resultTitle');
+        const stats = document.getElementById('stats');
+        const details = document.getElementById('details');
+
+        // Click to browse
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            console.log('📁 File selected:', file.name);
+
+            // Show processing state
+            results.classList.add('show');
+            resultTitle.innerHTML = '⏳ Processing...';
+            resultTitle.className = '';
+            stats.innerHTML = '';
+            details.innerHTML = '';
+
+            try {
+                // Parse file using DataUpload module
+                console.log('🔄 Parsing file...');
+                const parsedData = await DataUpload.parseFile(file);
+                console.log('✅ File parsed successfully:', parsedData);
+
+                // Prepare data for validation
+                console.log('🔄 Preparing data for validation...');
+                const structuredData = DataUpload.prepareDataForValidation(parsedData);
+                console.log('✅ Data structured:', structuredData);
+
+                // Display success
+                resultTitle.innerHTML = '✅ File Parsed Successfully!';
+                resultTitle.className = 'success';
+
+                // Display stats
+                stats.innerHTML = `
+                    <div class="stat"><strong>File:</strong> ${structuredData.fileName}</div>
+                    <div class="stat"><strong>Type:</strong> ${structuredData.fileType}</div>
+                    <div class="stat"><strong>Rows:</strong> ${structuredData.totalRows.toLocaleString()}</div>
+                    <div class="stat"><strong>Columns:</strong> ${structuredData.columnCount}</div>
+                `;
+
+                // Display headers
+                const headersList = structuredData.headers.map(h => `"${h}"`).join(', ');
+                details.innerHTML = `
+                    <h3>Headers (${structuredData.headers.length}):</h3>
+                    <pre>${headersList}</pre>
+                    <h3>Sample Row Data (First Row):</h3>
+                    <pre>${JSON.stringify(structuredData.rows[0], null, 2)}</pre>
+                    <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                        ✅ Check the browser console for the complete parsed data structure
+                    </p>
+                `;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+
+                resultTitle.innerHTML = '❌ Error Parsing File';
+                resultTitle.className = 'error';
+                details.innerHTML = `
+                    <p><strong>Error Message:</strong></p>
+                    <pre style="background: #ffebee; color: #c62828;">${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>

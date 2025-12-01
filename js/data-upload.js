@@ -88,9 +88,21 @@ const DataUpload = (function () {
                         return;
                     }
 
-                    // Extract headers and data rows
-                    const headers = jsonData[0];
-                    const dataRows = jsonData.slice(1);
+                    // Extract headers and clean them
+                    const rawHeaders = jsonData[0];
+                    const headers = cleanHeaders(rawHeaders);
+
+                    // Extract data rows
+                    let allDataRows = jsonData.slice(1);
+
+                    // Check if first row is a metadata row (contains Required/Optional/Conditional)
+                    if (allDataRows.length > 0 && isMetadataRow(allDataRows[0])) {
+                        console.log('Skipping metadata row:', allDataRows[0]);
+                        allDataRows = allDataRows.slice(1);
+                    }
+
+                    // Filter out empty rows
+                    const dataRows = allDataRows.filter(row => isRowNotEmpty(row));
 
                     const result = {
                         fileName: file.name,
@@ -120,6 +132,60 @@ const DataUpload = (function () {
     }
 
     /**
+     * Clean headers by removing descriptions after multiple spaces
+     * Preserves headers containing '=' as they indicate allowable values
+     * @param {Array<string>} headers - Raw headers
+     * @returns {Array<string>} Cleaned headers
+     */
+    function cleanHeaders(headers) {
+        return headers.map(header => {
+            if (!header) return '';
+
+            // If header contains '=', keep the whole thing (allowable values)
+            if (header.includes('=')) {
+                return header.trim();
+            }
+
+            // Split by multiple spaces (3 or more) to separate field name from description
+            const parts = header.split(/\s{3,}/);
+
+            // Return the first part (field name) trimmed
+            return parts[0].trim();
+        });
+    }
+
+    /**
+     * Check if a row is a metadata row (contains Required/Optional/Conditional)
+     * @param {Array} row - Row data
+     * @returns {boolean} True if metadata row
+     */
+    function isMetadataRow(row) {
+        if (!row || row.length === 0) return false;
+
+        const metadataKeywords = ['required', 'optional', 'conditional'];
+        const rowString = JSON.stringify(row).toLowerCase();
+
+        // Check if row contains any of the keywords
+        return metadataKeywords.some(keyword => rowString.includes(keyword));
+    }
+
+    /**
+     * Check if a row has any non-empty values
+     * @param {Array} row - Row data
+     * @returns {boolean} True if row has data
+     */
+    function isRowNotEmpty(row) {
+        if (!row || row.length === 0) return false;
+
+        // Check if at least one cell has a non-empty value
+        return row.some(cell => {
+            if (cell === null || cell === undefined) return false;
+            const cellStr = String(cell).trim();
+            return cellStr.length > 0;
+        });
+    }
+
+    /**
      * Parse CSV file
      * @param {File} file - CSV file
      * @returns {Promise<Object>} Parsed data
@@ -131,7 +197,7 @@ const DataUpload = (function () {
             reader.onload = (e) => {
                 try {
                     const text = e.target.result;
-                    const lines = text.split(/\r?\n/).filter(line => line.trim());
+                    const lines = text.split(/\r?\n/);
 
                     if (lines.length === 0) {
                         reject(new Error('File is empty'));
@@ -139,10 +205,20 @@ const DataUpload = (function () {
                     }
 
                     // Parse CSV (simple implementation, handles quoted fields)
-                    const rows = lines.map(line => parseCSVLine(line));
+                    const allRows = lines.map(line => parseCSVLine(line));
 
-                    const headers = rows[0];
-                    const dataRows = rows.slice(1);
+                    const rawHeaders = allRows[0];
+                    const headers = cleanHeaders(rawHeaders);
+
+                    let allDataRows = allRows.slice(1);
+
+                    // Check if first row is a metadata row
+                    if (allDataRows.length > 0 && isMetadataRow(allDataRows[0])) {
+                        console.log('Skipping metadata row:', allDataRows[0]);
+                        allDataRows = allDataRows.slice(1);
+                    }
+
+                    const dataRows = allDataRows.filter(row => isRowNotEmpty(row));
 
                     const result = {
                         fileName: file.name,
@@ -182,7 +258,7 @@ const DataUpload = (function () {
             reader.onload = (e) => {
                 try {
                     const text = e.target.result;
-                    const lines = text.split(/\r?\n/).filter(line => line.trim());
+                    const lines = text.split(/\r?\n/);
 
                     if (lines.length === 0) {
                         reject(new Error('File is empty'));
@@ -190,10 +266,20 @@ const DataUpload = (function () {
                     }
 
                     // Split by tabs
-                    const rows = lines.map(line => line.split('\t'));
+                    const allRows = lines.map(line => line.split('\t'));
 
-                    const headers = rows[0];
-                    const dataRows = rows.slice(1);
+                    const rawHeaders = allRows[0];
+                    const headers = cleanHeaders(rawHeaders);
+
+                    let allDataRows = allRows.slice(1);
+
+                    // Check if first row is a metadata row
+                    if (allDataRows.length > 0 && isMetadataRow(allDataRows[0])) {
+                        console.log('Skipping metadata row:', allDataRows[0]);
+                        allDataRows = allDataRows.slice(1);
+                    }
+
+                    const dataRows = allDataRows.filter(row => isRowNotEmpty(row));
 
                     const result = {
                         fileName: file.name,
@@ -297,7 +383,7 @@ const DataUpload = (function () {
                     originalValue: cellValue,
                     currentValue: cellValue,
                     isModified: false,
-                    validationStatus: null, // Will be set by validation engine
+                    validationStatus: null, // Will be set by validation engine in Checkpoint 4
                     errors: [],
                     warnings: []
                 };
