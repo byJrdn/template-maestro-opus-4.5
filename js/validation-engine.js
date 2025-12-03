@@ -62,16 +62,33 @@ const ValidationEngine = (function () {
         let errorCount = 0;
         let warningCount = 0;
 
+        // DEBUG: Log what we're working with
+        if (Object.keys(row.metadata).length > 0) {
+            const firstHeader = Object.keys(row.metadata)[0];
+            const ruleKeys = Object.keys(columnRules).slice(0, 5);
+            console.log('🔍 ValidationEngine Debug:');
+            console.log('  Sample Header:', firstHeader);
+            console.log('  Available Rule Keys:', ruleKeys);
+            console.log('  First Rule Key Detail:', ruleKeys[0], '=>', columnRules[ruleKeys[0]]?.fieldName);
+            console.log('  Looking for:', firstHeader.toLowerCase());
+        }
+
         // Iterate through each cell in the row
         Object.keys(row.metadata).forEach(header => {
             const cellMeta = row.metadata[header];
             const value = cellMeta.currentValue;
             const rule = columnRules[header.toLowerCase()];
 
+            // DEBUG: Log if rule not found
+            if (!rule) {
+                console.warn(`⚠️ No rule found for header: "${header}" (lowercase: "${header.toLowerCase()}")`);
+            }
+
             // Reset validation status
             cellMeta.errors = [];
             cellMeta.warnings = [];
             cellMeta.validationStatus = 'valid';
+            cellMeta.canAutoFix = false;
 
             if (rule) {
                 // 1. Check Required
@@ -88,7 +105,7 @@ const ValidationEngine = (function () {
 
                 // 3. Check Allowed Values (List)
                 if (rule.type === 'list' && rule.allowedValues && !isEmpty(value)) {
-                    validateList(value, rule.allowedValues, cellMeta);
+                    validateList(value, rule.allowedValues, cellMeta, rule);
                 }
 
                 // 4. Check Max Length
@@ -119,51 +136,65 @@ const ValidationEngine = (function () {
 
     /**
      * Validate data type
-     * @param {any} value - Cell value
-     * @param {Object} rule - Column rule
-     * @param {Object} cellMeta - Cell metadata object
      */
     function validateType(value, rule, cellMeta) {
+        let isValid = true;
+        let errorMsg = '';
+
         switch (rule.type) {
             case 'date':
                 if (!DateUtils.isValidDate(value)) {
-                    addError(cellMeta, 'Invalid date format');
+                    isValid = false;
+                    errorMsg = 'Invalid date format';
                 }
                 break;
             case 'integer':
             case 'whole':
                 if (!isInteger(value)) {
-                    addError(cellMeta, 'Must be a whole number');
+                    isValid = false;
+                    errorMsg = 'Must be a whole number';
                 }
                 break;
             case 'decimal':
             case 'number':
                 if (!isNumber(value)) {
-                    addError(cellMeta, 'Must be a number');
+                    isValid = false;
+                    errorMsg = 'Must be a number';
                 }
                 break;
-            case 'text':
-            default:
-                // Text is generally always valid unless specific format required
-                break;
+        }
+
+        if (!isValid) {
+            // Check if it's fixable
+            const fixCheck = window.AutoFixEngine ? AutoFixEngine.checkFixability(value, rule) : { canFix: false };
+
+            if (fixCheck.canFix) {
+                addWarning(cellMeta, `${errorMsg} (Auto-fix available)`);
+                cellMeta.canAutoFix = true;
+            } else {
+                addError(cellMeta, errorMsg);
+            }
         }
     }
 
     /**
      * Validate against a list of allowed values
-     * @param {any} value - Cell value
-     * @param {Array} allowedValues - List of allowed values
-     * @param {Object} cellMeta - Cell metadata object
      */
-    function validateList(value, allowedValues, cellMeta) {
+    function validateList(value, allowedValues, cellMeta, rule) {
         // Case-insensitive check
         const normalizedValue = String(value).trim().toLowerCase();
         const match = allowedValues.some(v => String(v).trim().toLowerCase() === normalizedValue);
 
         if (!match) {
-            // Check if it's a close match (for potential auto-fix warning)
-            // For now, just mark as error
-            addError(cellMeta, 'Value not in allowed list');
+            // Check if it's fixable (fuzzy match, etc.)
+            const fixCheck = window.AutoFixEngine ? AutoFixEngine.checkFixability(value, rule) : { canFix: false };
+
+            if (fixCheck.canFix) {
+                addWarning(cellMeta, `Value not in list (Auto-fix available: ${fixCheck.fixedValue})`);
+                cellMeta.canAutoFix = true;
+            } else {
+                addError(cellMeta, 'Value not in allowed list');
+            }
         }
     }
 

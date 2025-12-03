@@ -1512,44 +1512,82 @@ HANDSONTABLE INTEGRATION NOTES:
 
         function startValidation() {
             if (!selectedDataFile) return;
-
             // Close modal
             closeModal('data-upload');
-
             // Show validation page
             showPage('validation');
-
             // Update validation page with file info
             document.getElementById('validation-template-name').textContent = currentTemplateName;
             document.getElementById('validation-file-info').textContent = selectedDataFile.name + ' • Processing...';
+            // =========================================================================
+            // REFACTORED: Template-Driven Validation with Auto-Mapping
+            // =========================================================================
 
-            // Use DataUpload module to parse the file
+            // 1. Get template rules (single source of truth)
+            if (!window.currentTemplateRules) {
+                console.error('❌ No template rules found!');
+                alert('Template rules not loaded. Please select a template first.');
+                showPage('templates');
+                return;
+            }
+
+            const templateRules = window.currentTemplateRules;
+            console.log('📋 Using template rules:', templateRules);
+            // 2. Parse client file
             DataUpload.parseFile(selectedDataFile)
                 .then(parsedData => {
                     console.log('✅ File parsed successfully:', parsedData);
+                    // 3. AUTO-MAP client columns to template columns
+                    const mappingResult = ColumnMapper.mapColumns(
+                        parsedData.headers,
+                        templateRules.columns
+                    );
 
-                    // Prepare data for validation
-                    const structuredData = DataUpload.prepareDataForValidation(parsedData);
-                    console.log('✅ Data structured for validation:', structuredData);
+                    console.log('🔗 Column Mapping Result:');
+                    console.log('  Confidence:', (mappingResult.confidence * 100).toFixed(1) + '%');
+                    console.log('  Mapped:', mappingResult.mappedCount, '/', mappingResult.totalColumns);
 
-                    // ---------------------------------------------------------
-                    // NEW: Run Validation Engine
-                    // ---------------------------------------------------------
-                    if (window.currentTemplateRules) {
-                        console.log('🔍 Running validation engine...');
-                        const validatedData = ValidationEngine.validateDataset(structuredData, window.currentTemplateRules);
-                        console.log('✅ Validation complete:', validatedData);
-
-                        // Store for later use
-                        window.currentValidationData = validatedData;
-
-                        // Update UI with real validation stats
-                        displayValidationResults(validatedData);
-                    } else {
-                        console.warn('⚠️ No template rules found, skipping validation');
-                        window.currentValidationData = structuredData;
-                        displayParsedData(structuredData);
+                    if (mappingResult.unmapped.length > 0) {
+                        console.warn('  Unmapped columns:', mappingResult.unmapped);
                     }
+
+                    // Check confidence threshold
+                    if (mappingResult.confidence < 0.8) {
+                        const proceed = confirm(
+                            `Column mapping confidence is ${(mappingResult.confidence * 100).toFixed(0)}%.\n\n` +
+                            `Unmapped columns: ${mappingResult.unmapped.map(u => u.templateColumn).join(', ')}\n\n` +
+                            `Continue anyway?`
+                        );
+                        if (!proceed) {
+                            showPage('upload');
+                            return;
+                        }
+                    }
+
+                    // 4. Apply mapping to create structured data
+                    const mappedRows = ColumnMapper.applyMapping(
+                        parsedData.rows,
+                        mappingResult,
+                        templateRules.columns
+                    );
+
+                    const structuredData = {
+                        rows: mappedRows,
+                        totalRows: mappedRows.length,
+                        columnCount: templateRules.columns.length,
+                        fileName: selectedDataFile.name,
+                        uploadedAt: new Date().toISOString()
+                    };
+
+                    console.log('📊 Structured data:', structuredData);
+                    // 5. Run validation using template rules
+                    console.log('🔍 Running validation engine...');
+                    const validatedData = ValidationEngine.validateDataset(structuredData, templateRules);
+                    console.log('✅ Validation complete:', validatedData);
+                    // 6. Store globally
+                    window.currentValidationData = validatedData;
+                    // 7. Display results and initialize grid
+                    displayValidationResults(validatedData);
                 })
                 .catch(error => {
                     console.error('❌ Error parsing file:', error);
@@ -1601,26 +1639,31 @@ HANDSONTABLE INTEGRATION NOTES:
             const now = new Date();
             document.getElementById('last-validated').textContent = 'Last validated: ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-            // Show placeholder (Handsontable coming in next step)
-            document.getElementById('grid-placeholder').innerHTML = `
-                <div class="p-8 text-center">
-                    <div class="w-16 h-16 bg-${stats.errorRows > 0 ? 'error' : 'success'}-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-${stats.errorRows > 0 ? 'error' : 'success'}-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="${stats.errorRows > 0 ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' : 'M5 13l4 4L19 7'}"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-display font-semibold text-slate-900 mb-1">Validation Complete</h3>
-                    <p class="text-slate-500 text-sm mb-4">Found ${stats.totalErrors} errors and ${stats.totalWarnings} warnings in ${totalRows} rows</p>
-                    <div class="text-left max-w-md mx-auto bg-slate-50 rounded-lg p-4 mb-4">
-                        <p class="text-xs font-mono text-slate-600 mb-2"><strong>Validation Results:</strong></p>
-                        <ul class="text-xs text-slate-600 space-y-1">
-                            <li class="flex justify-between"><span>Valid Rows:</span> <span class="font-semibold text-success-600">${stats.validRows}</span></li>
-                            <li class="flex justify-between"><span>Rows with Errors:</span> <span class="font-semibold text-error-600">${stats.errorRows}</span></li>
-                            <li class="flex justify-between"><span>Rows with Warnings:</span> <span class="font-semibold text-warning-600">${stats.warningRows}</span></li>
-                        </ul>
-                    </div>
-                </div>
-            `;
+            // ---------------------------------------------------------
+            // NEW: Initialize Handsontable Grid
+            // ---------------------------------------------------------
+            const container = document.getElementById('grid-placeholder');
+            container.innerHTML = ''; // Clear placeholder
+
+            // Create a dedicated container for Handsontable if not exists
+            let hotContainer = document.getElementById('handsontable-container');
+            if (!hotContainer) {
+                hotContainer = document.createElement('div');
+                hotContainer.id = 'handsontable-container';
+                hotContainer.style.height = '600px'; // Fixed height for scrolling
+                hotContainer.style.width = '100%';
+                hotContainer.style.overflow = 'hidden';
+                container.appendChild(hotContainer);
+            }
+
+            // Initialize grid
+            if (window.HandsontableGrid && window.currentTemplateRules) {
+                console.log('📊 Initializing Handsontable grid...');
+                HandsontableGrid.initializeGrid('handsontable-container', data, window.currentTemplateRules);
+            } else {
+                console.error('❌ HandsontableGrid or rules missing');
+                container.innerHTML = '<div class="p-8 text-center text-error-600">Error initializing grid. Check console.</div>';
+            }
         }
 
         function displayParsedData(data) {
@@ -1758,14 +1801,37 @@ HANDSONTABLE INTEGRATION NOTES:
             document.getElementById('breadcrumb-sep').classList.toggle('hidden', name !== 'validation');
             document.getElementById('breadcrumb-cur').classList.toggle('hidden', name !== 'validation');
         }
-        function openModal(id) { document.getElementById('modal-' + id)?.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
-        function closeModal(id) { document.getElementById('modal-' + id)?.classList.add('hidden'); document.body.style.overflow = ''; }
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); document.body.style.overflow = ''; } });
-        function runAutoFix(btn) { const o = btn.innerHTML; btn.innerHTML = '<svg class="w-5 h-5 spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Processing...</span>'; btn.disabled = true; setTimeout(() => { btn.innerHTML = o; btn.disabled = false; alert('Auto-fix complete!'); }, 2000); }
+        function openModal(id) {
+            document.getElementById('modal-' + id)?.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            document.getElementById('modal-' + id)?.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
+                document.body.style.overflow = '';
+            }
+        });
+        function runAutoFix(btn) {
+            const o = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-5 h-5 spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Processing...</span>';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.innerHTML = o;
+                btn.disabled = false;
+                alert('Auto-fix complete!');
+            }, 2000);
+        }
     </script>
     <script src="js/date-utils.js"></script>
+    <script src="js/column-mapper.js"></script>
     <script src="js/data-upload.js"></script>
+    <script src="js/auto-fix-engine.js"></script>
     <script src="js/validation-engine.js"></script>
+    <script src="js/handsontable-grid.js"></script>
     <script src="js/excel-parser.js"></script>
     <script src="js/template-manager.js"></script>
 </body>

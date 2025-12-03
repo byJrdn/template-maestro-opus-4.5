@@ -137,19 +137,17 @@ const DataUpload = (function () {
      * @param {Array<string>} headers - Raw headers
      * @returns {Array<string>} Cleaned headers
      */
+
     function cleanHeaders(headers) {
         return headers.map(header => {
             if (!header) return '';
 
-            // If header contains '=', keep the whole thing (allowable values)
-            if (header.includes('=')) {
-                return header.trim();
-            }
+            // Split by multiple spaces (2 or more) or tabs to separate field name from description
+            // This removes everything after the field name: dropdown options, validation notes, etc.
+            const parts = String(header).split(/\s{2,}|\t/);
 
-            // Split by multiple spaces (3 or more) to separate field name from description
-            const parts = header.split(/\s{3,}/);
-
-            // Return the first part (field name) trimmed
+            // Always return just the first part (field name) trimmed
+            // This ensures client file headers match template rule keys
             return parts[0].trim();
         });
     }
@@ -378,15 +376,20 @@ const DataUpload = (function () {
             parsedData.headers.forEach((header, colIndex) => {
                 const cellValue = row[colIndex] || '';
 
-                rowData[header] = cellValue;
-                cellMetadata[header] = {
-                    originalValue: cellValue,
-                    currentValue: cellValue,
-                    isModified: false,
-                    validationStatus: null, // Will be set by validation engine in Checkpoint 4
-                    errors: [],
-                    warnings: []
-                };
+                // Normalize header key (trim) to ensure matching
+                const key = header ? header.trim() : '';
+
+                if (key) {
+                    rowData[key] = cellValue;
+                    cellMetadata[key] = {
+                        originalValue: cellValue,
+                        currentValue: cellValue,
+                        isModified: false,
+                        validationStatus: null, // Will be set by validation engine in Checkpoint 4
+                        errors: [],
+                        warnings: []
+                    };
+                }
             });
 
             return {
