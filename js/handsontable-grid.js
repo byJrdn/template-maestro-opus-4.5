@@ -88,7 +88,7 @@ const HandsontableGrid = (function () {
 
             // Dimensions
             width: '100%',
-            height: 480,
+            height: 650,
 
             // Headers
             rowHeaders: false,

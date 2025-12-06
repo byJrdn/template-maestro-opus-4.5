@@ -1650,9 +1650,9 @@ HANDSONTABLE INTEGRATION NOTES:
             if (!hotContainer) {
                 hotContainer = document.createElement('div');
                 hotContainer.id = 'handsontable-container';
-                hotContainer.style.height = '600px'; // Fixed height for scrolling
+                hotContainer.style.height = '700px'; // Taller container // Fixed height for scrolling
                 hotContainer.style.width = '100%';
-                hotContainer.style.overflow = 'hidden';
+                hotContainer.style.overflow = 'auto'; // Enable scrolling
                 container.appendChild(hotContainer);
             }
 
@@ -1802,6 +1802,19 @@ HANDSONTABLE INTEGRATION NOTES:
             document.getElementById('breadcrumb-cur').classList.toggle('hidden', name !== 'validation');
         }
         function openModal(id) {
+            // Load template rules when opening settings modal
+            if (id === 'settings' && window.selectedTemplateId) {
+                const templates = JSON.parse(localStorage.getItem('templates') || '[]');
+                const template = templates.find(t => t.id === window.selectedTemplateId);
+                if (template?.rules) {
+                    console.log('✅ Loaded template rules for settings');
+                    window.currentTemplateRules = template.rules;
+                    if (typeof window.displayTemplateRules === 'function') {
+                        window.displayTemplateRules(template.rules);
+                    }
+                }
+            }
+
             document.getElementById('modal-' + id)?.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }

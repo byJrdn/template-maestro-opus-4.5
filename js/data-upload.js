@@ -89,14 +89,30 @@ const DataUpload = (function () {
                     }
 
                     // Extract headers and clean them
-                    const rawHeaders = jsonData[0];
+                    // Handle reversed format: if Row 1 is metadata, swap with Row 2
+                    let rawHeaders = jsonData[0];
+                    let metadataRow = null;
+
+                    // Check if first row is metadata (contains Required/Optional/Conditional)
+                    if (isMetadataRow(rawHeaders)) {
+                        console.log('🔄 Detected reversed format: Row 1 is requirements, Row 2 is headers');
+                        console.log('Requirements row:', rawHeaders);
+                        metadataRow = rawHeaders;
+                        rawHeaders = jsonData[1]; // Use Row 2 as headers
+                        console.log('Header row:', rawHeaders);
+                    }
+
                     const headers = cleanHeaders(rawHeaders);
 
                     // Extract data rows
                     let allDataRows = jsonData.slice(1);
 
-                    // Check if first row is a metadata row (contains Required/Optional/Conditional)
-                    if (allDataRows.length > 0 && isMetadataRow(allDataRows[0])) {
+                    // Skip metadata row if it's in the data rows
+                    if (metadataRow) {
+                        // Metadata was in row 1, headers in row 2, so data starts at row 3
+                        allDataRows = jsonData.slice(2);
+                    } else if (allDataRows.length > 0 && isMetadataRow(allDataRows[0])) {
+                        // Standard format: headers in row 1, metadata in row 2
                         console.log('Skipping metadata row:', allDataRows[0]);
                         allDataRows = allDataRows.slice(1);
                     }
