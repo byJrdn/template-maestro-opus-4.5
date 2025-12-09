@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.1.0/dist/handsontable.full.min.css">
     <script src="https://cdn.jsdelivr.net/npm/handsontable@14.1.0/dist/handsontable.full.min.js"></script>
 
-    <!-- Validation colors CSS -->
-    <link rel="stylesheet" href="css/validation-colors.css">
+    <!-- Grid Theme CSS - Minimal, works with Handsontable -->
+    <link rel="stylesheet" href="css/grid-theme.css">
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -371,7 +371,7 @@ TYPE COLORS:
                                     rows</p>
                             </div>
                         </div>
-                        <button onclick="openModal('settings')"
+                        <button onclick="openTemplateSettings(currentTemplateId)"
                             class="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -498,12 +498,12 @@ TYPE COLORS:
                                     Auto Fix Data
                                 </button>
 
-                                <select id="filter-view"
+                                <select id="filter-view" onchange="filterGridRows(this.value)"
                                     class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
                                     <option value="all">All Rows</option>
                                     <option value="valid">Valid Only</option>
-                                    <option value="warnings">Warnings Only</option>
-                                    <option value="errors">Errors Only</option>
+                                    <option value="warning">Warnings Only</option>
+                                    <option value="error">Errors Only</option>
                                 </select>
 
                                 <button
