@@ -512,13 +512,13 @@ TYPE COLORS:
                             <!-- Right Actions - Export -->
                             <div class="flex items-center gap-3">
                                 <span class="text-sm text-slate-500">Export:</span>
-                                <button onclick="openModal('export')"
+                                <button onclick="openExportModal('error_report')"
                                     class="px-3 py-2 text-sm text-slate-600 hover:text-error-600 border border-slate-300 hover:border-error-300 rounded-lg transition-colors">Error
                                     Report</button>
-                                <button onclick="openModal('export')"
+                                <button onclick="openExportModal('xlsx')"
                                     class="px-3 py-2 text-sm text-slate-600 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors">Full
                                     XLS</button>
-                                <button onclick="openModal('export')"
+                                <button onclick="openExportModal('txt')"
                                     class="px-3 py-2 text-sm text-slate-600 hover:text-success-600 border border-slate-300 hover:border-success-300 rounded-lg transition-colors">Tab
                                     Delimited</button>
                             </div>
@@ -774,17 +774,17 @@ HANDSONTABLE INTEGRATION NOTES:
                         <label class="block text-sm font-medium text-slate-700 mb-2">Options</label>
                         <div class="space-y-2">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked
+                                <input type="checkbox" id="export-include-header" checked
                                     class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
                                 <span class="text-sm text-slate-700">Include header row</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked
+                                <input type="checkbox" id="export-preserve-types" checked
                                     class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
                                 <span class="text-sm text-slate-700">Preserve data types</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox"
+                                <input type="checkbox" id="export-include-status"
                                     class="w-4 h-4 text-isw-blue-600 border-slate-300 rounded focus:ring-isw-blue-500">
                                 <span class="text-sm text-slate-700">Include validation status column</span>
                             </label>
@@ -796,7 +796,7 @@ HANDSONTABLE INTEGRATION NOTES:
                 <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 rounded-b-2xl flex justify-end gap-3">
                     <button onclick="closeModal('export')"
                         class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
-                    <button onclick="closeModal('export')"
+                    <button onclick="executeExport()"
                         class="btn-press inline-flex items-center gap-2 px-5 py-2 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -2037,6 +2037,7 @@ HANDSONTABLE INTEGRATION NOTES:
     <script src="js/excel-parser.js"></script>
     <script src="js/template-manager.js"></script>
     <script src="js/rule-editor.js"></script>
+    <script src="js/data-export.js"></script>
 </body>
 
 </html>
