@@ -234,6 +234,11 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
         }
     }
 
+    // Load export settings into the Export Settings tab
+    if (window.DataExport && window.DataExport.loadExportSettingsToModal) {
+        window.DataExport.loadExportSettingsToModal(template.exportSettings || {});
+    }
+
     // Open modal
     openModal('settings');
 
@@ -333,9 +338,14 @@ function saveRulesFromJSON() {
         template.ruleSummary = generateRuleSummary(updatedRules);
         template.updatedAt = new Date().toISOString();
 
+        // Save export settings from the Export Settings tab
+        if (window.DataExport && window.DataExport.getExportSettingsFromModal) {
+            template.exportSettings = window.DataExport.getExportSettingsFromModal();
+        }
+
         templateStore.set(templateId, template);
 
-        showToast('Rules saved successfully!', 'success');
+        showToast('Settings saved successfully!', 'success');
 
         // Re-initialize the visual editor with saved rules
         if (typeof window.initModalRuleEditor === 'function') {
