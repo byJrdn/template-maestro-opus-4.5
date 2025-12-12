@@ -127,6 +127,9 @@
     border-left: 3px solid var(--tm-error-border);
 }
 
+/* Conditional columns use the standard error styling when triggered and empty */
+/* No special amber styling - just shows as error when validation fails */
+
 /* Selected cell highlight */
 .handsontable td.current,
 .handsontable td.area {

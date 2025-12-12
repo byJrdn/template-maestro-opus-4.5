@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Equity Data Validation Dashboard | Certent</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <!-- Handsontable for interactive data grid -->
@@ -197,18 +198,9 @@
                                 class="btn-press inline-flex items-center gap-2 px-5 py-2.5 bg-isw-green-600 hover:bg-isw-green-700 text-white font-semibold rounded-lg shadow-sm transition-all">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                </svg>
-                                Smart Template Upload
-                            </button>
-                            <button
-                                class="btn-press inline-flex items-center gap-2 px-4 py-2.5 bg-isw-blue-700 hover:bg-isw-blue-800 text-white font-semibold rounded-lg shadow-sm transition-all">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                    stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                                 </svg>
-                                New Template
+                                Create New Template Model
                             </button>
                         </div>
                     </div>
@@ -633,6 +625,7 @@ HANDSONTABLE INTEGRATION NOTES:
    }
 -->
             </div>
+
         </main>
 
         <!-- FOOTER -->
@@ -665,8 +658,8 @@ HANDSONTABLE INTEGRATION NOTES:
                             </svg>
                         </div>
                         <div>
-                            <h2 class="font-display font-semibold text-lg text-slate-900">Smart Template Upload</h2>
-                            <p class="text-sm text-slate-500">Auto-extract validation rules from Excel</p>
+                            <h2 class="font-display font-semibold text-lg text-slate-900">Create Template Model</h2>
+                            <p class="text-sm text-slate-500">Build a validation model from your Excel template</p>
                         </div>
                     </div>
                 </div>
@@ -680,9 +673,9 @@ HANDSONTABLE INTEGRATION NOTES:
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         <div>
-                            <p class="font-medium text-slate-900 text-sm">Intelligent Rule Extraction</p>
-                            <p class="text-xs text-slate-600 mt-0.5">Auto-detects: headers, data types, validation
-                                rules, conditional formatting, formulas</p>
+                            <p class="font-medium text-slate-900 text-sm">Template Structure Extraction</p>
+                            <p class="text-xs text-slate-600 mt-0.5">Auto-detects: field names, data types (date, list,
+                                text), and requirement levels. Configure conditional rules manually after import.</p>
                         </div>
                     </div>
                 </div>
@@ -816,22 +809,34 @@ HANDSONTABLE INTEGRATION NOTES:
         </div>
     </div>
 
-    <!-- Template Settings Modal -->
+    <!-- Template Settings Modal - FULL SCREEN ENHANCED -->
     <div id="modal-settings" class="fixed inset-0 z-50 hidden">
         <div class="modal-overlay absolute inset-0" onclick="closeModal('settings')"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
             <div
-                class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-4xl pointer-events-auto max-h-[90vh] overflow-hidden flex flex-col">
+                class="animate-scale-in bg-white rounded-2xl shadow-xl w-full max-w-7xl pointer-events-auto h-[95vh] overflow-hidden flex flex-col">
 
-                <!-- Header -->
-                <div class="px-6 py-4 border-b border-slate-200">
+                <!-- Header with Gradient -->
+                <div class="px-6 py-5 bg-gradient-to-r from-isw-blue-600 to-isw-blue-700 border-b border-isw-blue-700">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="font-display font-semibold text-lg text-slate-900">Template Settings</h2>
-                            <p id="settings-template-name" class="text-sm text-slate-500">Template Name</p>
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="font-display font-semibold text-xl text-white">Template Settings</h2>
+                                <p id="settings-template-name" class="text-sm text-isw-blue-100">Template Name</p>
+                            </div>
                         </div>
                         <button onclick="closeModal('settings')"
-                            class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                            class="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -851,17 +856,6 @@ HANDSONTABLE INTEGRATION NOTES:
                                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                                 </svg>
                                 Validation Rules
-                            </span>
-                        </button>
-                        <button data-tab="json" onclick="switchSettingsTab('json')"
-                            class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-colors">
-                            <span class="flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                </svg>
-                                JSON Editor
                             </span>
                         </button>
                         <button data-tab="autofix" onclick="switchSettingsTab('autofix')"
@@ -892,150 +886,300 @@ HANDSONTABLE INTEGRATION NOTES:
                 <!-- Tab Content -->
                 <div class="flex-1 overflow-y-auto">
 
-                    <!-- Validation Rules Tab -->
-                    <div id="tab-rules" class="tab-content p-6">
-                        <!-- Summary Cards -->
-                        <div class="grid grid-cols-4 gap-4 mb-6">
-                            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                                <p class="text-2xl font-bold text-slate-900" id="summary-total">--</p>
-                                <p class="text-xs text-slate-500">Total Columns</p>
-                            </div>
-                            <div class="bg-success-50 rounded-lg p-4 text-center">
-                                <p class="text-2xl font-bold text-success-700" id="summary-required">--</p>
-                                <p class="text-xs text-slate-500">Required</p>
-                            </div>
-                            <div class="bg-warning-50 rounded-lg p-4 text-center">
-                                <p class="text-2xl font-bold text-warning-700" id="summary-conditional">--</p>
-                                <p class="text-xs text-slate-500">Conditional</p>
-                            </div>
-                            <div class="bg-isw-blue-50 rounded-lg p-4 text-center">
-                                <p class="text-2xl font-bold text-isw-blue-700" id="summary-validations">--</p>
-                                <p class="text-xs text-slate-500">With Validation</p>
-                            </div>
-                        </div>
+                    <!-- Validation Rules Tab - ENHANCED MASTER-DETAIL LAYOUT -->
+                    <div id="tab-rules" class="tab-content h-full">
+                        <div class="flex h-full">
 
-                        <!-- Rules Table -->
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <div class="max-h-[400px] overflow-y-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="bg-slate-50 sticky top-0">
-                                        <tr class="border-b border-slate-200">
-                                            <th class="text-left px-4 py-3 font-medium text-slate-600">Field</th>
-                                            <th class="text-left px-4 py-3 font-medium text-slate-600">Type</th>
-                                            <th class="text-left px-4 py-3 font-medium text-slate-600">Required</th>
-                                            <th class="text-left px-4 py-3 font-medium text-slate-600">Validation</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="rules-table-body" class="divide-y divide-slate-100">
-                                        <tr>
-                                            <td colspan="4" class="px-4 py-8 text-center text-slate-500">
-                                                No rules extracted yet. Upload a Smart Template to extract rules.
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                            <!-- Left Sidebar - Field List (280px) -->
+                            <div class="w-72 flex-shrink-0 border-r border-slate-200 flex flex-col bg-slate-50">
+                                <!-- Summary Stats -->
+                                <div class="p-4 border-b border-slate-200 bg-white">
+                                    <div class="grid grid-cols-3 gap-2 text-center">
+                                        <div class="bg-slate-50 rounded-lg p-2">
+                                            <p class="text-lg font-bold text-slate-900" id="summary-total">--</p>
+                                            <p class="text-xs text-slate-500">Total</p>
+                                        </div>
+                                        <div class="bg-error-50 rounded-lg p-2">
+                                            <p class="text-lg font-bold text-error-700" id="summary-required">--</p>
+                                            <p class="text-xs text-slate-500">Required</p>
+                                        </div>
+                                        <div class="bg-warning-50 rounded-lg p-2">
+                                            <p class="text-lg font-bold text-warning-700" id="summary-conditional">--
+                                            </p>
+                                            <p class="text-xs text-slate-500">Cond.</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Complex Rules Section -->
-                        <div id="complex-rules-section" class="mt-6 hidden">
-                            <h3 class="font-medium text-slate-900 mb-3">Complex Rules</h3>
-                            <div id="complex-rules-list" class="space-y-2">
-                                <!-- Populated by JS -->
+                                <!-- Search & Filter -->
+                                <div class="p-3 border-b border-slate-200 bg-white">
+                                    <div class="relative mb-2">
+                                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input type="text" id="modal-field-search" placeholder="Search fields..."
+                                            class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none"
+                                            oninput="filterModalFields(this.value)">
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button onclick="filterModalFieldsByReq('all')"
+                                            class="modal-filter-btn active flex-1 px-2 py-1 text-xs rounded bg-isw-blue-100 text-isw-blue-700 font-medium"
+                                            data-filter="all">All</button>
+                                        <button onclick="filterModalFieldsByReq('required')"
+                                            class="modal-filter-btn flex-1 px-2 py-1 text-xs rounded bg-slate-100 text-slate-600"
+                                            data-filter="required">Req</button>
+                                        <button onclick="filterModalFieldsByReq('conditional')"
+                                            class="modal-filter-btn flex-1 px-2 py-1 text-xs rounded bg-slate-100 text-slate-600"
+                                            data-filter="conditional">Cond</button>
+                                        <button onclick="filterModalFieldsByReq('optional')"
+                                            class="modal-filter-btn flex-1 px-2 py-1 text-xs rounded bg-slate-100 text-slate-600"
+                                            data-filter="optional">Opt</button>
+                                    </div>
+                                </div>
+
+                                <!-- Field List -->
+                                <div id="modal-field-list" class="flex-1 overflow-y-auto">
+                                    <div class="p-4 text-center text-slate-500 text-sm">
+                                        No fields loaded.
+                                    </div>
+                                </div>
+
+                                <!-- Add Field Button -->
+                                <div class="p-3 border-t border-slate-200 bg-white">
+                                    <button onclick="addNewFieldInModal()"
+                                        class="w-full px-3 py-2 text-sm font-medium text-isw-blue-600 hover:bg-isw-blue-50 border border-dashed border-isw-blue-300 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                            stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Field
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Right Panel - Field Editor -->
+                            <div class="flex-1 flex flex-col overflow-hidden">
+
+                                <!-- Empty State -->
+                                <div id="modal-field-empty" class="flex-1 flex items-center justify-center">
+                                    <div class="text-center">
+                                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        <h3 class="font-semibold text-slate-700 mb-1">Select a Field</h3>
+                                        <p class="text-sm text-slate-500">Choose a field from the left to edit its rules
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Field Editor Panel -->
+                                <div id="modal-field-editor" class="flex-1 overflow-y-auto hidden p-6">
+
+                                    <!-- Field Header -->
+                                    <div class="flex items-center justify-between mb-6">
+                                        <div>
+                                            <h3 id="modal-edit-field-title"
+                                                class="text-lg font-semibold text-slate-900">Field Name</h3>
+                                            <p id="modal-edit-field-subtitle" class="text-sm text-slate-500">Type: text
+                                            </p>
+                                        </div>
+                                        <button onclick="deleteFieldInModal()"
+                                            class="p-2 text-slate-400 hover:text-error-600 hover:bg-error-50 rounded-lg"
+                                            title="Delete field">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Basic Info Section -->
+                                    <div class="bg-slate-50 rounded-xl p-5 mb-5">
+                                        <h4 class="font-medium text-slate-900 mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Basic Information
+                                        </h4>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Field
+                                                    Name</label>
+                                                <input type="text" id="modal-edit-field-name"
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none"
+                                                    onchange="updateFieldProperty('fieldName', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Data
+                                                    Type</label>
+                                                <select id="modal-edit-field-type"
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none"
+                                                    onchange="updateFieldProperty('type', this.value); toggleListSection()">
+                                                    <option value="text">Text</option>
+                                                    <option value="integer">Integer</option>
+                                                    <option value="decimal">Decimal</option>
+                                                    <option value="date">Date</option>
+                                                    <option value="list">List (Dropdown)</option>
+                                                    <option value="boolean">Yes/No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Requirement Section -->
+                                    <div class="bg-slate-50 rounded-xl p-5 mb-5">
+                                        <h4 class="font-medium text-slate-900 mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Requirement
+                                        </h4>
+                                        <div class="flex gap-6 mb-4">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="modal-edit-requirement" value="required"
+                                                    class="text-error-600 focus:ring-error-500"
+                                                    onchange="updateFieldProperty('requirement', 'required'); toggleConditionalSection()">
+                                                <span class="text-sm font-medium text-slate-700">Required</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="modal-edit-requirement" value="conditional"
+                                                    class="text-warning-600 focus:ring-warning-500"
+                                                    onchange="updateFieldProperty('requirement', 'conditional'); toggleConditionalSection()">
+                                                <span class="text-sm font-medium text-slate-700">Conditional</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="modal-edit-requirement" value="optional"
+                                                    class="text-isw-blue-600 focus:ring-isw-blue-500"
+                                                    onchange="updateFieldProperty('requirement', 'optional'); toggleConditionalSection()">
+                                                <span class="text-sm font-medium text-slate-700">Optional</span>
+                                            </label>
+                                        </div>
+
+
+                                        <!-- Conditional Logic Builder -->
+                                        <div id="modal-conditional-section"
+                                            class="mt-4 p-4 bg-warning-50 border border-warning-200 rounded-lg hidden">
+                                            <div class="flex items-center justify-between mb-3">
+                                                <h5 class="text-sm font-medium text-warning-800">Required When:</h5>
+                                                <!-- AND/OR Toggle -->
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="text-warning-700">Match:</span>
+                                                    <div
+                                                        class="inline-flex bg-white border border-warning-300 rounded-lg p-0.5">
+                                                        <button id="operator-and-btn"
+                                                            onclick="setConditionOperator('AND')"
+                                                            class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors bg-warning-600 text-white">
+                                                            ALL
+                                                        </button>
+                                                        <button id="operator-or-btn"
+                                                            onclick="setConditionOperator('OR')"
+                                                            class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors text-warning-700 hover:bg-warning-100">
+                                                            ANY
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-warning-600 mb-3" id="operator-description">
+                                                Field is required when <strong>all</strong> conditions below are met.
+                                            </p>
+                                            <div id="modal-condition-builder" class="space-y-2">
+                                                <!-- Conditions populated by JS -->
+                                            </div>
+                                            <button onclick="addConditionInModal()"
+                                                class="mt-3 text-sm text-warning-700 hover:text-warning-800 font-medium flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                Add Condition
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- List Values Section (shown for list type) -->
+                                    <div id="modal-list-section" class="bg-slate-50 rounded-xl p-5 mb-5 hidden">
+                                        <h4 class="font-medium text-slate-900 mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                            </svg>
+                                            Allowed Values
+                                        </h4>
+                                        <div id="modal-list-values" class="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                                            <!-- Values populated by JS -->
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="modal-new-list-value" placeholder="Add new value..."
+                                                class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none"
+                                                onkeypress="if(event.key==='Enter') addListValueInModal()">
+                                            <button onclick="addListValueInModal()"
+                                                class="px-4 py-2 bg-isw-blue-600 hover:bg-isw-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Validation Rules Section -->
+                                    <div class="bg-slate-50 rounded-xl p-5">
+                                        <h4 class="font-medium text-slate-900 mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                            </svg>
+                                            Validation Rules
+                                        </h4>
+                                        <div class="space-y-3">
+                                            <div class="flex items-center justify-between py-2">
+                                                <div class="flex items-center gap-3">
+                                                    <input type="checkbox" id="modal-rule-maxlen"
+                                                        class="rounded text-isw-blue-600 focus:ring-isw-blue-500">
+                                                    <label for="modal-rule-maxlen"
+                                                        class="text-sm text-slate-700">Maximum Length</label>
+                                                </div>
+                                                <input type="number" id="modal-rule-maxlen-val" placeholder="255"
+                                                    class="w-24 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:outline-none">
+                                            </div>
+                                            <div class="flex items-center justify-between py-2"
+                                                id="modal-rule-minval-row">
+                                                <div class="flex items-center gap-3">
+                                                    <input type="checkbox" id="modal-rule-minval"
+                                                        class="rounded text-isw-blue-600 focus:ring-isw-blue-500">
+                                                    <label for="modal-rule-minval"
+                                                        class="text-sm text-slate-700">Minimum Value</label>
+                                                </div>
+                                                <input type="number" id="modal-rule-minval-val" placeholder="0"
+                                                    class="w-24 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:outline-none">
+                                            </div>
+                                            <div class="flex items-center justify-between py-2"
+                                                id="modal-rule-maxval-row">
+                                                <div class="flex items-center gap-3">
+                                                    <input type="checkbox" id="modal-rule-maxval"
+                                                        class="rounded text-isw-blue-600 focus:ring-isw-blue-500">
+                                                    <label for="modal-rule-maxval"
+                                                        class="text-sm text-slate-700">Maximum Value</label>
+                                                </div>
+                                                <input type="number" id="modal-rule-maxval-val" placeholder="100"
+                                                    class="w-24 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:outline-none">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- JSON Editor Tab -->
-                    <div id="tab-json" class="tab-content p-6 hidden">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="font-medium text-slate-900">Rule Configuration (JSON)</h3>
-                                <p class="text-sm text-slate-500">Edit validation rules directly. Changes sync with
-                                    visual editor.</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="copyRulesJSON()"
-                                    class="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg transition-colors">
-                                    <span class="flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                        Copy
-                                    </span>
-                                </button>
-                                <button onclick="formatRulesJSON()"
-                                    class="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg transition-colors">
-                                    <span class="flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M4 6h16M4 12h16m-7 6h7" />
-                                        </svg>
-                                        Format
-                                    </span>
-                                </button>
-                                <button onclick="validateRulesJSON()"
-                                    class="px-3 py-1.5 text-sm text-isw-blue-600 hover:text-isw-blue-700 border border-isw-blue-300 rounded-lg transition-colors">
-                                    <span class="flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Validate
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- JSON Editor -->
-                        <div class="relative">
-                            <textarea id="rules-json-editor"
-                                class="w-full h-[400px] font-mono text-sm p-4 bg-slate-900 text-green-400 rounded-lg border-0 focus:ring-2 focus:ring-isw-blue-500 resize-none"
-                                placeholder='{"columns": [], "dataValidations": [], "conditionalRules": []}'
-                                spellcheck="false"></textarea>
-                            <div id="json-error"
-                                class="hidden absolute bottom-4 left-4 right-4 bg-error-100 text-error-700 text-sm px-3 py-2 rounded-lg">
-                                JSON Error: <span id="json-error-message"></span>
-                            </div>
-                        </div>
-
-                        <!-- JSON Schema Reference -->
-                        <details class="mt-4">
-                            <summary class="text-sm text-slate-500 cursor-pointer hover:text-slate-700">
-                                View JSON Schema Reference
-                            </summary>
-                            <div
-                                class="mt-2 p-4 bg-slate-50 rounded-lg text-xs font-mono text-slate-600 overflow-x-auto">
-                                <pre>{
-  "metadata": { "extractedAt": "ISO date", "mainSheet": "string" },
-  "columns": [{
-    "index": 1,
-    "columnLetter": "A",
-    "fieldName": "Equityholder Code",
-    "requirement": "required|conditional|optional",
-    "type": "text|list|date|integer|decimal",
-    "maxLength": 25,
-    "allowedValues": ["E", "N"],
-    "validation": { "type": "list", "formula1": "\"E,N\"" }
-  }],
-  "complexRules": [{
-    "type": "either_or|dependent",
-    "name": "Name Requirement",
-    "description": "Either First+Last or Owner Name",
-    "groups": [["C","E"], ["F"]],
-    "severity": "error|warning"
-  }],
-  "lookupTables": {
-    "Country Table": { "headers": [], "lookupMap": {} }
-  }
-}</pre>
-                            </div>
-                        </details>
-                    </div>
 
                     <!-- Auto-Fix Rules Tab -->
                     <div id="tab-autofix" class="tab-content p-6 hidden">
@@ -1057,23 +1201,68 @@ HANDSONTABLE INTEGRATION NOTES:
                         </div>
                     </div>
 
-                    <!-- Client Logic Tab -->
-                    <div id="tab-client" class="tab-content p-6 hidden">
-                        <div class="text-center py-12">
-                            <div
-                                class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
+                    <!-- Client Logic Tab - Advanced Scripting -->
+                    <div id="tab-client" class="tab-content hidden h-full flex flex-col">
+                        <div class="flex items-center justify-between p-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-medium text-slate-900">Client-Specific Logic</h3>
+                                <p class="text-sm text-slate-500">Write custom validation scripts that run after
+                                    standard rules.</p>
                             </div>
-                            <h3 class="font-medium text-slate-900 mb-2">Client-Specific Logic</h3>
-                            <p class="text-sm text-slate-500 max-w-md mx-auto">
-                                Store custom post-import cleaning rules that apply only to specific clients.
-                                These run after standard validation.
-                            </p>
-                            <p class="text-xs text-slate-400 mt-4">Coming in Phase 2</p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="formatRulesJSON()"
+                                    class="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg transition-colors hover:bg-slate-50">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                            stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M4 6h16M4 12h16m-7 6h7" />
+                                        </svg>
+                                        Format
+                                    </span>
+                                </button>
+                                <button onclick="validateRulesJSON()"
+                                    class="px-3 py-1.5 text-sm text-isw-blue-600 hover:text-isw-blue-700 border border-isw-blue-300 rounded-lg transition-colors hover:bg-isw-blue-50">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                            stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Validate
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Editor Info -->
+                        <div class="px-4 py-3 bg-amber-50 border-b border-amber-100">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div class="text-sm text-amber-800">
+                                    <strong>Advanced Mode:</strong> Edit the full rule configuration directly.
+                                    Changes here override the visual editor. For most users, use the
+                                    <button onclick="switchSettingsTab('rules')"
+                                        class="text-isw-blue-600 hover:underline font-medium">Validation Rules</button>
+                                    tab instead.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Script/JSON Editor -->
+                        <div class="relative flex-1 p-4">
+                            <textarea id="rules-json-editor"
+                                class="w-full h-full font-mono text-sm p-4 bg-slate-900 text-green-400 rounded-xl border-0 focus:ring-2 focus:ring-isw-blue-500 resize-none shadow-inner"
+                                placeholder='{"columns": [], "customLogic": [], "conditionalRules": []}'
+                                spellcheck="false"></textarea>
+                            <div id="json-error"
+                                class="hidden absolute bottom-8 left-8 right-8 bg-error-100 text-error-700 text-sm px-3 py-2 rounded-lg shadow-lg">
+                                JSON Error: <span id="json-error-message"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1847,6 +2036,7 @@ HANDSONTABLE INTEGRATION NOTES:
     <script src="js/handsontable-grid.js"></script>
     <script src="js/excel-parser.js"></script>
     <script src="js/template-manager.js"></script>
+    <script src="js/rule-editor.js"></script>
 </body>
 
 </html>

@@ -348,6 +348,9 @@ const HandsontableGrid = (function () {
             } else if (rowData?.rowStatus === 'valid') {
                 td.classList.add('cell-valid');
             }
+
+            // Conditional columns show as error when triggered and empty
+            // No special amber indicator - just uses standard error styling
         }
 
         // Format dates if using DateUtils
@@ -541,6 +544,37 @@ const HandsontableGrid = (function () {
     // PUBLIC API
     // =========================================================================
 
+    /**
+     * Update rules and refresh the grid
+     * Called after saving changes in Template Settings
+     */
+    function updateRules(newRules) {
+        if (!hotInstance || !newRules) return;
+
+        // Update stored rules
+        currentRules = newRules;
+        columnMapping = [...newRules.columns];
+
+        // Rebuild columns with new configuration (including updated allowedValues)
+        const columns = buildColumns(newRules);
+        const colHeaders = buildHeaders(newRules);
+
+        // Update the settings
+        hotInstance.updateSettings({
+            columns: columns,
+            colHeaders: colHeaders
+        });
+
+        // Re-validate all rows with new rules
+        validateAllRows();
+
+        // Render and update stats
+        hotInstance.render();
+        updateStatistics();
+
+        console.log('✅ Grid updated with new rules');
+    }
+
     function refresh() {
         if (hotInstance) {
             validateAllRows();
@@ -606,6 +640,7 @@ const HandsontableGrid = (function () {
 
     return {
         initializeGrid,
+        updateRules,
         deleteRow,
         jumpToRow,
         refresh,

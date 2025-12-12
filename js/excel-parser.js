@@ -18,13 +18,18 @@ async function extractTemplateRules(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = function (e) {
+        reader.onload = async function (e) {
             try {
-                const data = new Uint8Array(e.target.result);
+                const arrayBuffer = e.target.result;
+                const data = new Uint8Array(arrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
 
-                // Extract rules from workbook
+                // Extract rules from workbook using SheetJS
                 const templateRules = parseWorkbook(workbook);
+
+                // NOTE: Automatic CF extraction disabled - users manually configure
+                // conditional rules via the visual editor (Template Settings > Validation Rules).
+
                 resolve(templateRules);
 
             } catch (error) {
@@ -75,8 +80,11 @@ function parseWorkbook(workbook) {
     // Apply data validations to columns
     applyValidationsToColumns(result.columns, result.dataValidations);
 
-    // Parse conditional formatting rules
-    result.conditionalRules = parseConditionalFormatting(mainSheet);
+    // Parse conditional formatting rules (pass columns for field name resolution)
+    result.conditionalRules = parseConditionalFormatting(mainSheet, result.columns);
+
+    // Apply CF rules to columns (populates conditionalRequirement)
+    applyConditionalRulesToColumns(result.columns, result.conditionalRules);
 
     // Parse lookup tables from other sheets
     for (const sheetName of workbook.SheetNames) {
@@ -111,7 +119,7 @@ function parseColumns(sheet) {
         const reqText = reqCell ? String(reqCell.v).trim().toLowerCase() : '';
 
         // Parse header for field name and description
-        const { fieldName, description, allowedValues, type } = parseHeader(headerText);
+        const { fieldName, description, allowedValues, type, dateFormat } = parseHeader(headerText);
         // Determine requirement level
         const requirement = parseRequirement(reqText);
 
@@ -123,8 +131,10 @@ function parseColumns(sheet) {
             fullHeader: headerText,
             requirement: requirement.level,
             requirementNote: requirement.note,
-            type: type || 'text',  // Use parsed type            maxLength: null,
+            type: type || 'text',
+            maxLength: null,
             allowedValues: allowedValues,
+            dateFormat: dateFormat,
             validation: null
         });
     }
@@ -135,6 +145,7 @@ function parseColumns(sheet) {
 function parseHeader(headerText) {
     // Many headers have format: "Field Name    Description here"
     // OR: "Field Name    E=Employee, N=Nonemployee" (dropdown options)
+    // OR: "Begin Date    MM/DD/YYYY" (date with format)
     // Split on multiple spaces or tabs
     const parts = headerText.split(/\s{2,}|\t/);
 
@@ -142,6 +153,7 @@ function parseHeader(headerText) {
     let description = '';
     let allowedValues = null;
     let type = 'text';
+    let dateFormat = null;
 
     if (parts.length >= 2) {
         fieldName = parts[0].trim();
@@ -149,7 +161,7 @@ function parseHeader(headerText) {
 
         // Check if second part contains dropdown values (has = signs)
         if (secondPart.includes('=')) {
-            // Extract dropdown values: "E=Employee, N=Nonemployee" → ['Employee', 'Nonemployee']
+            // Extract dropdown values: "E=Employee, N=Nonemployee" → ['E', 'N']
             allowedValues = extractDropdownValues(secondPart);
             if (allowedValues && allowedValues.length > 0) {
                 type = 'list';
@@ -162,11 +174,34 @@ function parseHeader(headerText) {
         }
     }
 
+    // Detect date type from field name or description
+    const fullText = (fieldName + ' ' + description).toLowerCase();
+    const datePatterns = [
+        /mm\/dd\/yyyy/i,
+        /mm-dd-yyyy/i,
+        /dd\/mm\/yyyy/i,
+        /yyyy-mm-dd/i,
+        /\bdate\b/i
+    ];
+
+    for (const pattern of datePatterns) {
+        if (pattern.test(fullText)) {
+            type = 'date';
+            // Extract specific format if present
+            const formatMatch = fullText.match(/(mm[\/\-]dd[\/\-]yyyy|dd[\/\-]mm[\/\-]yyyy|yyyy[\/\-]mm[\/\-]dd)/i);
+            if (formatMatch) {
+                dateFormat = formatMatch[1].toUpperCase();
+            }
+            break;
+        }
+    }
+
     return {
         fieldName: fieldName,
         description: description,
         allowedValues: allowedValues,
-        type: type
+        type: type,
+        dateFormat: dateFormat
     };
 }
 /**
@@ -332,12 +367,27 @@ function mapValidationType(xlType) {
 // CONDITIONAL FORMATTING PARSER
 // ============================================================
 
-function parseConditionalFormatting(sheet) {
+function parseConditionalFormatting(sheet, columns) {
     const rules = [];
 
-    if (!sheet['!condfmt']) return rules;
+    // Debug: Log all available sheet properties to find CF
+    console.log('🔍 Sheet keys:', Object.keys(sheet).filter(k => k.startsWith('!')));
+    console.log('🔍 !condfmt:', sheet['!condfmt']);
+    console.log('🔍 !cf:', sheet['!cf']);
+    console.log('🔍 !cfRule:', sheet['!cfRule']);
 
-    for (const cf of sheet['!condfmt']) {
+    // Try different property names that SheetJS might use
+    const cfData = sheet['!condfmt'] || sheet['!cf'] || sheet['!cfRule'] || [];
+
+    if (!cfData || cfData.length === 0) {
+        console.warn('⚠️ No conditional formatting found in sheet. SheetJS may not expose CF rules from this file format.');
+        return rules;
+    }
+
+    console.log('📋 Found CF rules:', cfData.length);
+
+    for (const cf of cfData) {
+        console.log('📋 CF rule:', cf);
         const rule = {
             range: cf.sqref,
             type: cf.type,
@@ -347,7 +397,7 @@ function parseConditionalFormatting(sheet) {
                 fillColor: cf.style?.fill?.fgColor?.rgb || null,
                 fontColor: cf.style?.font?.color?.rgb || null
             },
-            interpretation: interpretConditionalFormula(cf.formula)
+            interpretation: interpretConditionalFormula(cf.formula, columns)
         };
 
         rules.push(rule);
@@ -356,42 +406,196 @@ function parseConditionalFormatting(sheet) {
     return rules;
 }
 
-function interpretConditionalFormula(formula) {
+/**
+ * Convert Excel CF formula to structured condition
+ * Common patterns:
+ * - LEN(TRIM($A3))=0  → field A is empty
+ * - $B3<>""          → field B is not empty
+ * - $C3="RSU"        → field C equals "RSU"
+ * - AND($B3<>"", LEN(TRIM($D3))=0) → B not empty AND D is empty
+ */
+function interpretConditionalFormula(formula, columns) {
     if (!formula || !formula[0]) return null;
 
     const f = formula[0];
+    const result = {
+        type: 'custom',
+        description: 'Custom formula',
+        formula: f,
+        conditions: []
+    };
 
-    // Empty cell check
-    if (f.includes('LEN(TRIM(') && f.includes('))=0')) {
-        return { type: 'empty_required', description: 'Required field is empty' };
+    try {
+        // Extract conditions from the formula
+        const conditions = extractConditionsFromFormula(f, columns);
+
+        if (conditions.length > 0) {
+            result.conditions = conditions;
+            result.type = 'conditional_requirement';
+            result.description = conditions.map(c =>
+                `${c.field} ${c.operator} ${c.value || ''}`
+            ).join(' AND ');
+        }
+
+        // Detect specific patterns
+        if (f.includes('LEN(TRIM(') && f.includes('))=0')) {
+            result.type = 'empty_required';
+            result.description = 'Required field is empty';
+        }
+
+        if (f.includes('AND(') && f.includes('LEN(TRIM($')) {
+            result.type = 'row_complete';
+            result.description = 'All required fields filled';
+        }
+
+        if (f.includes('NOT(OR(')) {
+            result.type = 'invalid_value';
+            result.description = 'Value not in allowed list';
+        }
+
+    } catch (e) {
+        console.warn('Failed to interpret CF formula:', f, e);
     }
 
-    // Complete row check (multiple AND conditions)
-    if (f.includes('AND(') && f.includes('LEN(TRIM($')) {
-        return { type: 'row_complete', description: 'All required fields filled' };
+    return result;
+}
+
+/**
+ * Extract structured conditions from an Excel formula
+ */
+function extractConditionsFromFormula(formula, columns) {
+    const conditions = [];
+
+    // Pattern: $A3<>"" or $A$3<>"" (cell is not empty)
+    const notEmptyPattern = /\$([A-Z]+)\$?\d+\s*<>\s*""/gi;
+    let match;
+    while ((match = notEmptyPattern.exec(formula)) !== null) {
+        const colLetter = match[1];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        conditions.push({
+            field: col?.fieldName || colLetter,
+            columnLetter: colLetter,
+            operator: 'is_not_empty',
+            value: null
+        });
     }
 
-    // Invalid value check (NOT OR)
-    if (f.includes('NOT(OR(')) {
-        return { type: 'invalid_value', description: 'Value not in allowed list' };
+    // Pattern: $A3="" or LEN(TRIM($A3))=0 (cell is empty)
+    const emptyPattern = /(?:LEN\(TRIM\(\$([A-Z]+)\$?\d+\)\)=0|\$([A-Z]+)\$?\d+\s*=\s*"")/gi;
+    while ((match = emptyPattern.exec(formula)) !== null) {
+        const colLetter = match[1] || match[2];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        conditions.push({
+            field: col?.fieldName || colLetter,
+            columnLetter: colLetter,
+            operator: 'is_empty',
+            value: null
+        });
     }
 
-    // Whitespace check
-    if (f.includes('LEFT(') && f.includes('\" \"')) {
-        return { type: 'whitespace', description: 'Leading or trailing whitespace' };
+    // Pattern: $A3="VALUE" (cell equals specific value)
+    const equalsPattern = /\$([A-Z]+)\$?\d+\s*=\s*"([^"]+)"/gi;
+    while ((match = equalsPattern.exec(formula)) !== null) {
+        const colLetter = match[1];
+        const value = match[2];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        // Avoid duplicate if already captured by empty pattern
+        if (!conditions.some(c => c.columnLetter === colLetter && c.operator === 'is_empty')) {
+            conditions.push({
+                field: col?.fieldName || colLetter,
+                columnLetter: colLetter,
+                operator: 'equals',
+                value: value
+            });
+        }
     }
 
-    // Comma check
-    if (f.includes('FIND(\",\"')) {
-        return { type: 'contains_comma', description: 'Cell contains comma' };
+    // Pattern: $A3<>"VALUE" (cell does not equal specific value)
+    const notEqualsPattern = /\$([A-Z]+)\$?\d+\s*<>\s*"([^"]+)"/gi;
+    while ((match = notEqualsPattern.exec(formula)) !== null) {
+        const colLetter = match[1];
+        const value = match[2];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        // Skip if value is empty (already handled by is_not_empty)
+        if (value !== '') {
+            conditions.push({
+                field: col?.fieldName || colLetter,
+                columnLetter: colLetter,
+                operator: 'not_equals',
+                value: value
+            });
+        }
     }
 
-    // Cross-field dependency
-    if (f.includes('<>\"\"') && f.includes('=\"\"')) {
-        return { type: 'cross_field', description: 'Dependent field requirement' };
+    // Pattern: TEXT($I3,"@")<>"VALUE" (cell as text does not equal value)
+    // This is used in: =AND(LEN(TRIM(C3))=0, TEXT($I3,"@")<>"Y")
+    const textNotEqualsPattern = /TEXT\(\$([A-Z]+)\$?\d+\s*,\s*"@"\)\s*<>\s*"([^"]+)"/gi;
+    while ((match = textNotEqualsPattern.exec(formula)) !== null) {
+        const colLetter = match[1];
+        const value = match[2];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        conditions.push({
+            field: col?.fieldName || colLetter,
+            columnLetter: colLetter,
+            operator: 'not_equals',
+            value: value
+        });
     }
 
-    return { type: 'custom', description: 'Custom formula', formula: f };
+    // Pattern: TEXT($I3,"@")="VALUE" (cell as text equals value)
+    const textEqualsPattern = /TEXT\(\$([A-Z]+)\$?\d+\s*,\s*"@"\)\s*=\s*"([^"]+)"/gi;
+    while ((match = textEqualsPattern.exec(formula)) !== null) {
+        const colLetter = match[1];
+        const value = match[2];
+        const col = columns?.find(c => c.columnLetter === colLetter);
+        conditions.push({
+            field: col?.fieldName || colLetter,
+            columnLetter: colLetter,
+            operator: 'equals',
+            value: value
+        });
+    }
+
+    console.log('📋 Extracted conditions from formula:', formula, '=>', conditions);
+
+    return conditions;
+}
+
+/**
+ * Apply conditional formatting rules to column definitions
+ * Maps CF rules to their target columns' conditionalRequirement property
+ */
+function applyConditionalRulesToColumns(columns, conditionalRules) {
+    for (const rule of conditionalRules) {
+        if (!rule.interpretation?.conditions?.length) continue;
+
+        // Get target columns from the CF range
+        const targetColumns = extractColumnsFromRange(rule.range);
+
+        for (const colLetter of targetColumns) {
+            const column = columns.find(c => c.columnLetter === colLetter);
+            if (column && column.requirement === 'conditional') {
+                // Find conditions that reference OTHER columns (not the target itself)
+                const triggerConditions = rule.interpretation.conditions.filter(
+                    cond => cond.columnLetter !== colLetter
+                );
+
+                if (triggerConditions.length > 0) {
+                    column.conditionalRequirement = {
+                        operator: 'AND',
+                        conditions: triggerConditions.map(c => ({
+                            field: c.field,
+                            operator: c.operator,
+                            value: c.value
+                        }))
+                    };
+
+                    console.log(`📋 Applied conditional rule to ${column.fieldName}:`,
+                        column.conditionalRequirement);
+                }
+            }
+        }
+    }
 }
 
 // ============================================================

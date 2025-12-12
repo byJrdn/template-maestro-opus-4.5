@@ -89,12 +89,32 @@ const ValidationEngine = (function () {
             cellMeta.warnings = [];
             cellMeta.validationStatus = 'valid';
             cellMeta.canAutoFix = false;
+            cellMeta.conditionalTriggered = false;  // Track if conditional became required
 
             if (rule) {
-                // 1. Check Required
+                // 1. Check Required - including conditional requirements
                 if (rule.requirement === 'required') {
                     if (isEmpty(value)) {
                         addError(cellMeta, 'Required field is missing');
+                    }
+                } else if (rule.requirement === 'conditional') {
+                    // Check if conditional requirement is defined
+                    if (rule.conditionalRequirement && rule.conditionalRequirement.conditions?.length > 0) {
+                        // Evaluate conditional requirement against row data
+                        const isTriggered = evaluateConditions(
+                            rule.conditionalRequirement.conditions,
+                            rule.conditionalRequirement.operator || 'AND',
+                            row.data
+                        );
+
+                        cellMeta.conditionalTriggered = isTriggered;
+
+                        if (isTriggered && isEmpty(value)) {
+                            addError(cellMeta, 'Conditionally required field is missing');
+                        }
+                    } else {
+                        // No conditions defined - log for debugging
+                        console.log(`⚠️ Conditional column "${header}" has no conditions defined. Use Template Settings to add conditions.`);
                     }
                 }
 
@@ -231,6 +251,69 @@ const ValidationEngine = (function () {
      */
     function addWarning(cellMeta, message) {
         cellMeta.warnings.push(message);
+    }
+
+    /**
+     * Evaluate conditional requirements against row data
+     * @param {Array} conditions - Array of condition objects
+     * @param {string} operator - 'AND' or 'OR'
+     * @param {Object} rowData - The row data object (field -> value)
+     * @returns {boolean} - true if conditions are met (column becomes required)
+     */
+    function evaluateConditions(conditions, operator, rowData) {
+        if (!conditions || conditions.length === 0) return false;
+
+        const results = conditions.map(condition =>
+            evaluateSingleCondition(condition, rowData)
+        );
+
+        if (operator === 'OR') {
+            return results.some(r => r === true);
+        }
+        // Default to AND
+        return results.every(r => r === true);
+    }
+
+    /**
+     * Evaluate a single condition against row data
+     */
+    function evaluateSingleCondition(condition, rowData) {
+        // Find the value for the trigger field
+        let triggerValue = null;
+
+        // Try to find by field name (case-insensitive)
+        for (const [key, val] of Object.entries(rowData)) {
+            if (key.toLowerCase() === condition.field.toLowerCase()) {
+                triggerValue = val;
+                break;
+            }
+        }
+
+        const triggerIsEmpty = isEmpty(triggerValue);
+
+        switch (condition.operator) {
+            case 'is_empty':
+                return triggerIsEmpty;
+
+            case 'is_not_empty':
+                return !triggerIsEmpty;
+
+            case 'equals':
+                if (triggerIsEmpty && !condition.value) return true;
+                return String(triggerValue).toLowerCase() === String(condition.value).toLowerCase();
+
+            case 'not_equals':
+                if (triggerIsEmpty && condition.value) return true;
+                return String(triggerValue).toLowerCase() !== String(condition.value).toLowerCase();
+
+            case 'contains':
+                if (triggerIsEmpty) return false;
+                return String(triggerValue).toLowerCase().includes(String(condition.value).toLowerCase());
+
+            default:
+                console.warn('Unknown condition operator:', condition.operator);
+                return false;
+        }
     }
 
     // Public API

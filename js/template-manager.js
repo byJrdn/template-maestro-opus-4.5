@@ -221,17 +221,9 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
     // Update modal header
     document.getElementById('settings-template-name').textContent = template.name;
 
-    // Update summary cards
-    if (template.ruleSummary) {
-        document.getElementById('summary-total').textContent = template.ruleSummary.totalColumns || '--';
-        document.getElementById('summary-required').textContent = template.ruleSummary.requiredColumns || '--';
-        document.getElementById('summary-conditional').textContent = template.ruleSummary.conditionalColumns || '--';
-        document.getElementById('summary-validations').textContent = template.ruleSummary.columnsWithValidation || '--';
-    }
-
-    // Populate rules table if we have extracted rules
-    if (template.rules && template.rules.columns) {
-        populateRulesTable(template.rules.columns);
+    // Initialize the enhanced modal rule editor
+    if (window.initModalRuleEditor && template.rules) {
+        window.initModalRuleEditor(template.rules);
     }
 
     // Populate JSON editor
@@ -326,6 +318,16 @@ function saveRulesFromJSON() {
     if (!jsonEditor) return;
 
     try {
+        // First, sync visual editor changes to JSON editor if there are any
+        if (typeof window.getEditedRules === 'function') {
+            const visualEditorRules = window.getEditedRules();
+            if (visualEditorRules) {
+                // Update the JSON editor with visual editor changes
+                jsonEditor.value = JSON.stringify(visualEditorRules, null, 2);
+            }
+        }
+
+        // Now parse and save
         const updatedRules = JSON.parse(jsonEditor.value);
         template.rules = updatedRules;
         template.ruleSummary = generateRuleSummary(updatedRules);
@@ -335,17 +337,25 @@ function saveRulesFromJSON() {
 
         showToast('Rules saved successfully!', 'success');
 
-        // Refresh the rules table
-        if (updatedRules.columns) {
-            populateRulesTable(updatedRules.columns);
+        // Re-initialize the visual editor with saved rules
+        if (typeof window.initModalRuleEditor === 'function') {
+            window.initModalRuleEditor(updatedRules);
         }
 
-        // Update summary cards
+        // Update summary cards (with null checks)
         if (template.ruleSummary) {
-            document.getElementById('summary-total').textContent = template.ruleSummary.totalColumns || '--';
-            document.getElementById('summary-required').textContent = template.ruleSummary.requiredColumns || '--';
-            document.getElementById('summary-conditional').textContent = template.ruleSummary.conditionalColumns || '--';
-            document.getElementById('summary-validations').textContent = template.ruleSummary.columnsWithValidation || '--';
+            const totalEl = document.getElementById('summary-total');
+            const reqEl = document.getElementById('summary-required');
+            const condEl = document.getElementById('summary-conditional');
+
+            if (totalEl) totalEl.textContent = template.ruleSummary.totalColumns || '--';
+            if (reqEl) reqEl.textContent = template.ruleSummary.requiredColumns || '--';
+            if (condEl) condEl.textContent = template.ruleSummary.conditionalColumns || '--';
+        }
+
+        // Update the grid with new rules (refreshes dropdowns, revalidates data)
+        if (typeof HandsontableGrid !== 'undefined' && HandsontableGrid.updateRules) {
+            HandsontableGrid.updateRules(updatedRules);
         }
 
     } catch (e) {
