@@ -29,11 +29,18 @@ const DataExport = (function () {
             }
         }
 
-        // Return defaults
+        // Return defaults with format-specific settings
         return {
-            filenamePattern: '{template}_{date}',
-            defaultFormat: 'xlsx',
-            includeHeader: true,
+            xlsx: {
+                filenamePattern: '{template}_{date}',
+                includeHeader: true,
+                includeRequirement: true
+            },
+            txt: {
+                filenamePattern: '{template}_{date}',
+                includeHeader: true,
+                includeRequirement: true
+            },
             includeStatus: false
         };
     }
@@ -72,32 +79,42 @@ const DataExport = (function () {
         const filenameInput = document.getElementById('export-filename');
         const extensionSpan = document.getElementById('export-extension');
         const headerCheckbox = document.getElementById('export-include-header');
+        const requirementCheckbox = document.getElementById('export-include-requirement');
         const statusCheckbox = document.getElementById('export-include-status');
 
-        // Apply template default options
-        if (headerCheckbox) headerCheckbox.checked = settings.includeHeader;
-        if (statusCheckbox) statusCheckbox.checked = settings.includeStatus;
+        // Apply common options
+        if (statusCheckbox) statusCheckbox.checked = settings.includeStatus || false;
 
-        // Generate filename based on pattern
-        let pattern = settings.filenamePattern || '{template}_{date}';
-        let extension = '.xlsx';
+        // Get format-specific settings
+        let formatSettings;
+        let pattern;
+        let extension;
 
         switch (type) {
             case 'error_report':
                 currentFilter = 'error';
+                formatSettings = settings.xlsx || {};
                 pattern = '{template}_Error_Report_{date}';
                 extension = '.xlsx';
                 break;
             case 'txt':
                 currentFilter = 'all';
+                formatSettings = settings.txt || {};
+                pattern = formatSettings.filenamePattern || '{template}_{date}';
                 extension = '.txt';
                 break;
             case 'xlsx':
             default:
                 currentFilter = 'all';
+                formatSettings = settings.xlsx || {};
+                pattern = formatSettings.filenamePattern || '{template}_{date}';
                 extension = '.xlsx';
                 break;
         }
+
+        // Apply format-specific options
+        if (headerCheckbox) headerCheckbox.checked = formatSettings.includeHeader ?? true;
+        if (requirementCheckbox) requirementCheckbox.checked = formatSettings.includeRequirement ?? true;
 
         const filename = generateFilename(pattern, templateName, extension);
         if (filenameInput) filenameInput.value = filename;
@@ -120,6 +137,7 @@ const DataExport = (function () {
         // Get settings from modal
         const filename = document.getElementById('export-filename')?.value || 'export';
         const includeHeader = document.getElementById('export-include-header')?.checked ?? true;
+        const includeRequirementRow = document.getElementById('export-include-requirement')?.checked ?? true;
         const includeStatus = document.getElementById('export-include-status')?.checked ?? false;
 
         // Filter rows based on export type
@@ -137,11 +155,15 @@ const DataExport = (function () {
             return;
         }
 
+        // Get column rules for requirement info
+        const rules = window.getTemplateRules?.(window.currentTemplateId);
+        const columnRules = rules?.columns || [];
+
         // Build export data array
         const headers = Object.keys(rowsToExport[0]?.data || {});
         const exportData = [];
 
-        // Add header row
+        // Row 1: Add header row
         if (includeHeader) {
             const headerRow = [...headers];
             if (includeStatus) {
@@ -150,7 +172,26 @@ const DataExport = (function () {
             exportData.push(headerRow);
         }
 
-        // Add data rows
+        // Row 2: Add requirement row (Required/Conditional/Optional)
+        if (includeRequirementRow) {
+            const requirementRow = headers.map(h => {
+                // Find the column rule for this header
+                const colRule = columnRules.find(c => c.fieldName === h);
+                if (colRule) {
+                    const req = (colRule.requirement || 'optional').toLowerCase();
+                    if (req === 'required') return 'Required';
+                    if (req === 'conditional') return 'Conditional';
+                    return 'Optional';
+                }
+                return 'Optional';
+            });
+            if (includeStatus) {
+                requirementRow.unshift(''); // Empty cell for status column
+            }
+            exportData.push(requirementRow);
+        }
+
+        // Row 3+: Add data rows
         rowsToExport.forEach(row => {
             const rowData = headers.map(h => row.data[h] ?? '');
             if (includeStatus) {
@@ -230,20 +271,10 @@ const DataExport = (function () {
 
     /**
      * Update the filename preview in the Export Settings tab
+     * (Preview is no longer shown - removed from UI)
      */
     function updateFilenamePreview() {
-        const patternInput = document.getElementById('export-filename-pattern');
-        const previewDiv = document.getElementById('export-filename-preview');
-        const formatRadio = document.querySelector('input[name="export-default-format"]:checked');
-
-        if (!patternInput || !previewDiv) return;
-
-        const pattern = patternInput.value || '{template}_{date}';
-        const extension = formatRadio?.value === 'txt' ? '.txt' : '.xlsx';
-        const templateName = document.getElementById('settings-template-name')?.textContent || 'Template_Name';
-
-        const filename = generateFilename(pattern, templateName, extension);
-        previewDiv.textContent = filename + extension;
+        // No longer needed since each format has its own section
     }
 
     /**
@@ -251,45 +282,72 @@ const DataExport = (function () {
      */
     function loadExportSettingsToModal(settings) {
         const defaults = {
-            filenamePattern: '{template}_{date}',
-            defaultFormat: 'xlsx',
-            includeHeader: true,
+            xlsx: {
+                filenamePattern: '{template}_{date}',
+                includeHeader: true,
+                includeRequirement: true
+            },
+            txt: {
+                filenamePattern: '{template}_{date}',
+                includeHeader: true,
+                includeRequirement: true
+            },
             includeStatus: false
         };
 
         const s = { ...defaults, ...settings };
 
-        const patternInput = document.getElementById('export-filename-pattern');
-        const formatRadios = document.querySelectorAll('input[name="export-default-format"]');
-        const headerCheckbox = document.getElementById('export-default-header');
+        // xlsx settings
+        const xlsxPatternInput = document.getElementById('export-xlsx-filename-pattern');
+        const xlsxHeaderCheckbox = document.getElementById('export-xlsx-header');
+        const xlsxRequirementCheckbox = document.getElementById('export-xlsx-requirement');
+
+        if (xlsxPatternInput) xlsxPatternInput.value = s.xlsx?.filenamePattern || '{template}_{date}';
+        if (xlsxHeaderCheckbox) xlsxHeaderCheckbox.checked = s.xlsx?.includeHeader ?? true;
+        if (xlsxRequirementCheckbox) xlsxRequirementCheckbox.checked = s.xlsx?.includeRequirement ?? true;
+
+        // txt settings
+        const txtPatternInput = document.getElementById('export-txt-filename-pattern');
+        const txtHeaderCheckbox = document.getElementById('export-txt-header');
+        const txtRequirementCheckbox = document.getElementById('export-txt-requirement');
+
+        if (txtPatternInput) txtPatternInput.value = s.txt?.filenamePattern || '{template}_{date}';
+        if (txtHeaderCheckbox) txtHeaderCheckbox.checked = s.txt?.includeHeader ?? true;
+        if (txtRequirementCheckbox) txtRequirementCheckbox.checked = s.txt?.includeRequirement ?? true;
+
+        // Common settings
         const statusCheckbox = document.getElementById('export-default-status');
-
-        if (patternInput) patternInput.value = s.filenamePattern;
-
-        formatRadios.forEach(radio => {
-            radio.checked = radio.value === s.defaultFormat;
-        });
-
-        if (headerCheckbox) headerCheckbox.checked = s.includeHeader;
-        if (statusCheckbox) statusCheckbox.checked = s.includeStatus;
-
-        // Update preview
-        updateFilenamePreview();
+        if (statusCheckbox) statusCheckbox.checked = s.includeStatus ?? false;
     }
 
     /**
      * Get export settings from the Template Settings modal
      */
     function getExportSettingsFromModal() {
-        const patternInput = document.getElementById('export-filename-pattern');
-        const formatRadio = document.querySelector('input[name="export-default-format"]:checked');
-        const headerCheckbox = document.getElementById('export-default-header');
+        // xlsx settings
+        const xlsxPatternInput = document.getElementById('export-xlsx-filename-pattern');
+        const xlsxHeaderCheckbox = document.getElementById('export-xlsx-header');
+        const xlsxRequirementCheckbox = document.getElementById('export-xlsx-requirement');
+
+        // txt settings
+        const txtPatternInput = document.getElementById('export-txt-filename-pattern');
+        const txtHeaderCheckbox = document.getElementById('export-txt-header');
+        const txtRequirementCheckbox = document.getElementById('export-txt-requirement');
+
+        // Common settings
         const statusCheckbox = document.getElementById('export-default-status');
 
         return {
-            filenamePattern: patternInput?.value || '{template}_{date}',
-            defaultFormat: formatRadio?.value || 'xlsx',
-            includeHeader: headerCheckbox?.checked ?? true,
+            xlsx: {
+                filenamePattern: xlsxPatternInput?.value || '{template}_{date}',
+                includeHeader: xlsxHeaderCheckbox?.checked ?? true,
+                includeRequirement: xlsxRequirementCheckbox?.checked ?? true
+            },
+            txt: {
+                filenamePattern: txtPatternInput?.value || '{template}_{date}',
+                includeHeader: txtHeaderCheckbox?.checked ?? true,
+                includeRequirement: txtRequirementCheckbox?.checked ?? true
+            },
             includeStatus: statusCheckbox?.checked ?? false
         };
     }

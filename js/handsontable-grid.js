@@ -174,6 +174,16 @@ const HandsontableGrid = (function () {
                     }
                     break;
 
+                case 'yes/no':
+                case 'yesno':
+                case 'boolean':
+                    // Yes/No type becomes Y/N dropdown
+                    colConfig.type = 'dropdown';
+                    colConfig.source = ['Y', 'N'];
+                    colConfig.strict = false;
+                    colConfig.allowInvalid = true;
+                    break;
+
                 case 'date':
                     colConfig.type = 'date';
                     colConfig.dateFormat = 'MM/DD/YYYY';

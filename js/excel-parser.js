@@ -317,13 +317,21 @@ function extractColumnsFromRange(range) {
 }
 
 function parseListFormula(formula) {
+    if (!formula) return null;
+
     // Handle quoted list: "E,N" or "Y,N" or "Payment,Payroll,1099"
     if (formula.startsWith('"') && formula.endsWith('"')) {
         return formula.slice(1, -1).split(',').map(v => v.trim());
     }
 
+    // Handle unquoted comma-separated list: I,N,S,C,PNQ,A,CPSU,CRSU,P,PSS,PSU,U,PIU
+    // This is common when Excel directly stores the list values without quotes
+    if (formula.includes(',') && !formula.includes('$') && !formula.includes(':')) {
+        return formula.split(',').map(v => v.trim()).filter(v => v.length > 0);
+    }
+
     // Handle range reference: $A$1:$A$100
-    // For now, return as-is (would need to resolve from lookup table)
+    // For now, return the formula as-is (would need to resolve from lookup table)
     return formula;
 }
 
