@@ -155,8 +155,9 @@ const DataExport = (function () {
             return;
         }
 
-        // Get column rules for requirement info
-        const rules = window.getTemplateRules?.(window.currentTemplateId);
+        // Get column rules for requirement info - use the grid's live rules
+        // These are the same rules used to display the requirement badges in the grid headers
+        const rules = window.HandsontableGrid?.getRules?.();
         const columnRules = rules?.columns || [];
 
         // Build export data array
@@ -174,9 +175,21 @@ const DataExport = (function () {
 
         // Row 2: Add requirement row (Required/Conditional/Optional)
         if (includeRequirementRow) {
-            const requirementRow = headers.map(h => {
-                // Find the column rule for this header
-                const colRule = columnRules.find(c => c.fieldName === h);
+            const requirementRow = headers.map((h, idx) => {
+                // Find the column rule for this header - try exact match first, then case-insensitive
+                const headerClean = (h || '').trim().toLowerCase();
+                let colRule = columnRules.find(c => c.fieldName === h);
+
+                // If not found, try case-insensitive match
+                if (!colRule) {
+                    colRule = columnRules.find(c => (c.fieldName || '').trim().toLowerCase() === headerClean);
+                }
+
+                // If still not found, try matching by index position (column order)
+                if (!colRule && idx < columnRules.length) {
+                    colRule = columnRules[idx];
+                }
+
                 if (colRule) {
                     const req = (colRule.requirement || 'optional').toLowerCase();
                     if (req === 'required') return 'Required';

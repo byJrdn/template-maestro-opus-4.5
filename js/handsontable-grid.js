@@ -615,6 +615,10 @@ const HandsontableGrid = (function () {
         return currentData;
     }
 
+    function getRules() {
+        return currentRules;
+    }
+
     /**
      * Filter rows by status
      */
@@ -657,6 +661,7 @@ const HandsontableGrid = (function () {
         getInstance,
         destroy,
         getData,
+        getRules,
         updateStatistics,
         filterByStatus
     };
