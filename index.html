@@ -1360,8 +1360,8 @@ HANDSONTABLE INTEGRATION NOTES:
                                     <div class="flex-1">
                                         <label class="font-medium text-slate-700 cursor-pointer">Normalize Line
                                             Breaks</label>
-                                        <p class="text-sm text-slate-500 mt-0.5">Replace multiple spaces and line breaks
-                                            with single spaces</p>
+                                        <p class="text-sm text-slate-500 mt-0.5">Replace line breaks with spaces and
+                                            remove blank rows between data</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" id="autofix-linebreaks" class="sr-only peer">
@@ -1413,23 +1413,6 @@ HANDSONTABLE INTEGRATION NOTES:
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" id="autofix-uppercase-country" class="sr-only peer">
-                                        <div
-                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
-                                        </div>
-                                    </label>
-                                </div>
-
-                                <!-- Title Case -->
-                                <div
-                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
-                                    <div class="flex-1">
-                                        <label class="font-medium text-slate-700 cursor-pointer">Title Case
-                                            Names</label>
-                                        <p class="text-sm text-slate-500 mt-0.5">Capitalize first letter of each word in
-                                            name fields</p>
-                                    </div>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="autofix-title-case" class="sr-only peer">
                                         <div
                                             class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
                                         </div>
@@ -1512,10 +1495,14 @@ HANDSONTABLE INTEGRATION NOTES:
                                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <div class="flex-1">
-                                    <p class="text-sm font-medium text-blue-900 mb-1">Auto-Fix Execution</p>
-                                    <p class="text-sm text-blue-700">These fixes run automatically when data is
-                                        uploaded, before validation. Changes are highlighted in yellow in the grid. You
-                                        can undo auto-fixes by clicking "Reset Grid" in Data Validation.</p>
+                                    <p class="text-sm font-medium text-blue-900 mb-1">How Auto-Fix Works</p>
+                                    <p class="text-sm text-blue-700">When data is uploaded, fixable cells are
+                                        detected and highlighted in <strong>yellow</strong>. Click "Auto-Fix Data" to
+                                        apply
+                                        corrections - you'll see a summary of all changes. Use "Reset Grid" to undo
+                                        fixes.
+                                        Alternative labels (synonyms) defined in field settings are also applied
+                                        automatically.</p>
                                 </div>
                             </div>
                         </div>

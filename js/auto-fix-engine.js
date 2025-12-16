@@ -51,9 +51,11 @@ const AutoFixEngine = (function () {
                 // Convert to string for text operations
                 const valueStr = String(newValue);
 
-                // Get column definition
+                // Get column definition - check both 'name' and 'fieldName'
                 const columnName = headers[colIdx];
-                const columnDef = columns.find(c => c.name === columnName) || {};
+                const columnDef = columns.find(c =>
+                    c.name === columnName || c.fieldName === columnName
+                ) || {};
 
                 // Apply fixes based on settings
                 newValue = applySettingsBasedFixes(valueStr, settings, columnDef, columnName);
@@ -102,27 +104,22 @@ const AutoFixEngine = (function () {
             result = toUpperCase(result);
         }
 
-        // 5. Title case names
-        if (settings.titleCaseNames && isNameColumn(columnName, columnDef)) {
-            result = toTitleCase(result);
-        }
-
-        // 6. Remove currency symbols
+        // 5. Remove currency symbols
         if (settings.removeCurrencySymbols && isNumericColumn(columnDef)) {
             result = removeCurrencySymbols(result);
         }
 
-        // 7. Standardize dates
+        // 6. Standardize dates
         if (settings.standardizeDates && isDateColumn(columnDef)) {
             result = standardizeDate(result);
         }
 
-        // 8. Remove thousand separators
+        // 7. Remove thousand separators
         if (settings.removeThousandSeparators && isNumericColumn(columnDef)) {
             result = removeThousandSeparators(result);
         }
 
-        // 9. Apply alternative labels (convert synonyms to canonical values)
+        // 8. Apply alternative labels (convert synonyms to canonical values)
         if (columnDef.alternativeLabels && Object.keys(columnDef.alternativeLabels).length > 0) {
             result = applyAlternativeLabels(result, columnDef.alternativeLabels);
         }
