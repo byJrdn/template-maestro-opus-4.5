@@ -284,7 +284,7 @@
 
         if (conditions.length === 0) {
             container.innerHTML = `
-                <p class="text-sm text-warning-600">No conditions defined yet.</p>
+                <p class="text-sm text-red-600">No conditions defined yet.</p>
             `;
             return;
         }
@@ -343,16 +343,16 @@
         if (andBtn && orBtn) {
             if (operator === 'OR') {
                 // OR is active
-                andBtn.classList.remove('bg-warning-600', 'text-white');
-                andBtn.classList.add('text-warning-700', 'hover:bg-warning-100');
-                orBtn.classList.remove('text-warning-700', 'hover:bg-warning-100');
-                orBtn.classList.add('bg-warning-600', 'text-white');
+                andBtn.classList.remove('bg-blue-600', 'text-white');
+                andBtn.classList.add('text-blue-700', 'hover:bg-blue-100');
+                orBtn.classList.remove('text-blue-700', 'hover:bg-blue-100');
+                orBtn.classList.add('bg-blue-600', 'text-white');
             } else {
                 // AND is active (default)
-                orBtn.classList.remove('bg-warning-600', 'text-white');
-                orBtn.classList.add('text-warning-700', 'hover:bg-warning-100');
-                andBtn.classList.remove('text-warning-700', 'hover:bg-warning-100');
-                andBtn.classList.add('bg-warning-600', 'text-white');
+                orBtn.classList.remove('bg-blue-600', 'text-white');
+                orBtn.classList.add('text-blue-700', 'hover:bg-blue-100');
+                andBtn.classList.remove('text-blue-700', 'hover:bg-blue-100');
+                andBtn.classList.add('bg-blue-600', 'text-white');
             }
         }
 
@@ -463,9 +463,9 @@
 
             const altPillsHtml = alternatives.length > 0
                 ? alternatives.map(alt => `
-                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                         ${escapeHtml(alt)}
-                        <button onclick="removeAlternativeLabel('${escapeHtml(alt)}')" class="hover:text-amber-600">
+                        <button onclick="removeAlternativeLabel('${escapeHtml(alt)}')" class="hover:text-red-600">
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
@@ -492,7 +492,7 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         ${altPillsHtml}
                         <button onclick="openAddAlternativeModal('${escapeHtml(val)}')" 
-                            class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 text-xs rounded-full transition-colors">
+                            class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 text-xs rounded-full transition-colors">
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                             </svg>

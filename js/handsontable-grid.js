@@ -49,6 +49,39 @@ const HandsontableGrid = (function () {
         currentRules = rules;
         columnMapping = [...rules.columns];
 
+        // Apply auto-fixes before validation
+        if (window.AutoFixEngine && window.currentTemplate) {
+            try {
+                // Convert structured data to 2D array for auto-fix
+                const headers = data.headers;
+                const rowsArray = data.rows.map(r =>
+                    headers.map(h => r.data[h] || '')
+                );
+                const gridArray = [headers, ...rowsArray];
+
+                // Apply fixes
+                const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, rules);
+
+                // Update the data structure with fixed values
+                if (result.changes && result.changes.length > 0) {
+                    result.changes.forEach(change => {
+                        const dataRowIndex = change.row - 1; // Adjust for header row
+                        const header = headers[change.col];
+                        if (data.rows[dataRowIndex] && header) {
+                            data.rows[dataRowIndex].data[header] = change.after;
+                            if (data.rows[dataRowIndex].metadata[header]) {
+                                data.rows[dataRowIndex].metadata[header].currentValue = change.after;
+                                data.rows[dataRowIndex].metadata[header].wasAutoFixed = true;
+                            }
+                        }
+                    });
+                    console.log(`✨ Auto-fixed ${result.changes.length} cells`);
+                }
+            } catch (err) {
+                console.warn('Auto-fix error (non-critical):', err);
+            }
+        }
+
         // Initial validation
         validateAllRows();
 
