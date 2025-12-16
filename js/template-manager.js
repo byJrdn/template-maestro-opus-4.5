@@ -3,20 +3,63 @@
  * 
  * Handles template creation, storage, and rule management.
  * Works with excel-parser.js to extract rules from Smart Templates.
+ * 
+ * Phase 3: Now syncs to Supabase cloud storage
  */
 
 // ============================================================
-// TEMPLATE STORAGE
+// TEMPLATE STORAGE - Cloud backed with local cache
 // ============================================================
 
-// In-memory template storage (would be backend API in production)
+// In-memory cache for performance (synced with cloud)
 const templateStore = new Map();
+
+// Flag to track if templates have been loaded from cloud
+let templatesLoaded = false;
 
 // Expose helper to get rules
 window.getTemplateRules = function (templateId) {
     const template = templateStore.get(templateId);
     return template ? template.rules : null;
 };
+
+// Load templates from cloud on startup
+async function loadTemplatesFromCloud() {
+    if (templatesLoaded) return;
+
+    try {
+        console.log('📡 Loading templates from cloud...');
+        const templates = await TemplateAPI.getTemplatesForUI();
+
+        // Clear and repopulate cache
+        templateStore.clear();
+        templates.forEach(t => templateStore.set(t.id, t));
+
+        // Update UI
+        const container = document.getElementById('template-list');
+        if (container) {
+            container.innerHTML = ''; // Clear existing
+            templates.forEach(t => addTemplateToList(t));
+        }
+
+        templatesLoaded = true;
+        console.log(`✅ Loaded ${templates.length} templates from cloud`);
+
+    } catch (error) {
+        console.error('Failed to load templates from cloud:', error);
+        showToast('Could not load templates from cloud. Using local cache.', 'warning');
+    }
+}
+
+// Initialize templates after auth
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for auth to complete
+    setTimeout(() => {
+        if (window.Auth && typeof TemplateAPI !== 'undefined') {
+            loadTemplatesFromCloud();
+        }
+    }, 500);
+});
 
 // ============================================================
 // CREATE TEMPLATE WITH RULE EXTRACTION
@@ -72,21 +115,23 @@ async function createTemplate() {
             console.log('Summary:', ruleSummary);
         }
 
-        // Create template object
-        const template = {
-            id: templateId,
+        // Create template object for cloud
+        const templateData = {
             name: name,
             type: type,
-            fileName: file ? file.name : null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            status: 'active',
-            rules: extractedRules,
-            ruleSummary: ruleSummary
+            description: file ? `Imported from ${file.name}` : '',
+            rules: extractedRules || {},
+            exportSettings: {}
         };
 
-        // Store template
-        templateStore.set(templateId, template);
+        // Save to cloud
+        console.log('☁️ Saving template to cloud...');
+        const savedTemplate = await TemplateAPI.createTemplate(templateData);
+
+        // Convert to local format and add to cache
+        const template = TemplateAPI.toLocalFormat(savedTemplate);
+        template.ruleSummary = ruleSummary;
+        templateStore.set(template.id, template);
 
         // Add to UI list
         addTemplateToList(template);
@@ -239,6 +284,17 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
         window.DataExport.loadExportSettingsToModal(template.exportSettings || {});
     }
 
+    // Load auto-fix settings into the Auto-Fix Rules tab
+    const autoFix = template.autoFixSettings || {};
+    document.getElementById('autofix-trim').checked = autoFix.trimWhitespace !== false; // Default true
+    document.getElementById('autofix-linebreaks').checked = autoFix.normalizeLineBreaks || false;
+    document.getElementById('autofix-special-chars').checked = autoFix.removeSpecialChars !== false; // Default true
+    document.getElementById('autofix-uppercase-country').checked = autoFix.uppercaseCountryCodes || false;
+    document.getElementById('autofix-title-case').checked = autoFix.titleCaseNames || false;
+    document.getElementById('autofix-currency').checked = autoFix.removeCurrencySymbols || false;
+    document.getElementById('autofix-dates').checked = autoFix.standardizeDates || false;
+    document.getElementById('autofix-thousand-sep').checked = autoFix.removeThousandSeparators || false;
+
     // Open modal
     openModal('settings');
 
@@ -310,7 +366,7 @@ function switchSettingsTab(tabName) {
 // SAVE RULES FROM JSON EDITOR
 // ============================================================
 
-function saveRulesFromJSON() {
+async function saveRulesFromJSON() {
     const templateId = window.currentSettingsTemplateId;
     const template = templateStore.get(templateId);
 
@@ -343,7 +399,34 @@ function saveRulesFromJSON() {
             template.exportSettings = window.DataExport.getExportSettingsFromModal();
         }
 
+        // Save auto-fix settings from Auto-Fix Rules tab
+        template.autoFixSettings = {
+            trimWhitespace: document.getElementById('autofix-trim')?.checked || false,
+            normalizeLineBreaks: document.getElementById('autofix-linebreaks')?.checked || false,
+            removeSpecialChars: document.getElementById('autofix-special-chars')?.checked || false,
+            uppercaseCountryCodes: document.getElementById('autofix-uppercase-country')?.checked || false,
+            titleCaseNames: document.getElementById('autofix-title-case')?.checked || false,
+            removeCurrencySymbols: document.getElementById('autofix-currency')?.checked || false,
+            standardizeDates: document.getElementById('autofix-dates')?.checked || false,
+            removeThousandSeparators: document.getElementById('autofix-thousand-sep')?.checked || false
+        };
+
+        // Update local cache
         templateStore.set(templateId, template);
+
+        // Sync to cloud
+        try {
+            console.log('☁️ Syncing template changes to cloud...');
+            await TemplateAPI.updateTemplate(templateId, {
+                rules: updatedRules,
+                exportSettings: template.exportSettings,
+                autoFixSettings: template.autoFixSettings
+            });
+            console.log('✅ Template synced to cloud');
+        } catch (cloudError) {
+            console.warn('Failed to sync to cloud:', cloudError);
+            showToast('Saved locally, but cloud sync failed.', 'warning');
+        }
 
         showToast('Settings saved successfully!', 'success');
 
@@ -422,7 +505,7 @@ function deleteTemplate(templateId, templateName) {
     openModal('delete-confirm');
 }
 
-function confirmDeleteTemplate() {
+async function confirmDeleteTemplate() {
     if (!pendingDeleteId) return;
 
     const templateId = pendingDeleteId;
@@ -435,8 +518,18 @@ function confirmDeleteTemplate() {
     // Close modal
     closeModal('delete-confirm');
 
-    // Remove from store
+    // Remove from local cache
     templateStore.delete(templateId);
+
+    // Delete from cloud
+    try {
+        console.log('☁️ Deleting template from cloud...');
+        await TemplateAPI.deleteTemplate(templateId);
+        console.log('✅ Template deleted from cloud');
+    } catch (cloudError) {
+        console.warn('Failed to delete from cloud:', cloudError);
+        // Template is already removed from UI, just log the warning
+    }
 
     // Remove from UI with animation
     const row = document.querySelector(`[data-template-id="${templateId}"]`);

@@ -232,13 +232,16 @@
      */
     window.toggleListSection = function () {
         const section = document.getElementById('modal-list-section');
+        const altLabelsSection = document.getElementById('modal-alt-labels-section');
         const typeSelect = document.getElementById('modal-edit-field-type');
 
         if (section && typeSelect) {
             if (typeSelect.value === 'list') {
                 section.classList.remove('hidden');
+                if (altLabelsSection) altLabelsSection.classList.remove('hidden');
             } else {
                 section.classList.add('hidden');
+                if (altLabelsSection) altLabelsSection.classList.add('hidden');
             }
         }
     };
@@ -438,31 +441,74 @@
     };
 
     /**
-     * Render list values
+     * Render list values in two-column format
      */
     function renderListValues(field) {
         const container = document.getElementById('modal-list-values');
         if (!container) return;
 
         const values = field.allowedValues || [];
+        const altLabels = field.alternativeLabels || {};
 
         if (values.length === 0) {
-            container.innerHTML = `<p class="text-sm text-slate-500">No values defined.</p>`;
+            container.innerHTML = `<p class="text-sm text-slate-500 col-span-2">No values defined.</p>`;
             return;
         }
 
-        container.innerHTML = values.map((val, idx) => `
-            <div class="flex items-center gap-2 bg-white p-2 rounded border border-slate-200">
-                <input type="text" value="${val}" 
-                    class="flex-1 px-2 py-1 text-sm border border-slate-300 rounded"
-                    onchange="updateListValueInModal(${idx}, this.value)">
-                <button onclick="removeListValueInModal(${idx})" class="p-1 text-slate-400 hover:text-error-600">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        `).join('');
+        container.innerHTML = values.map((val, idx) => {
+            // Get alternative labels for this value
+            const alternatives = Object.entries(altLabels)
+                .filter(([alt, target]) => target === val)
+                .map(([alt]) => alt);
+
+            const altPillsHtml = alternatives.length > 0
+                ? alternatives.map(alt => `
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                        ${escapeHtml(alt)}
+                        <button onclick="removeAlternativeLabel('${escapeHtml(alt)}')" class="hover:text-amber-600">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </span>
+                `).join(' ')
+                : '<span class="text-xs text-slate-400">No alternatives</span>';
+
+            return `
+                <div class="grid grid-cols-2 gap-4 items-center p-3 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                    <!-- Allowed Value Column -->
+                    <div class="flex items-center gap-2">
+                        <input type="text" value="${escapeHtml(val)}" 
+                            class="flex-1 px-2 py-1 text-sm border border-slate-300 rounded-md focus:border-isw-blue-500 focus:ring-1 focus:ring-isw-blue-100 focus:outline-none"
+                            onchange="updateListValueInModal(${idx}, this.value)">
+                        <button onclick="removeListValueInModal(${idx})" class="p-1 text-slate-400 hover:text-error-600" title="Remove value">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Alternative Labels Column -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        ${altPillsHtml}
+                        <button onclick="openAddAlternativeModal('${escapeHtml(val)}')" 
+                            class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 text-xs rounded-full transition-colors">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Alt
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -506,6 +552,39 @@
             renderListValues(field);
         }
     };
+
+    /**
+     * Open prompt to add an alternative label
+     */
+    window.openAddAlternativeModal = function (targetValue) {
+        const altLabel = prompt(`Enter alternative label that should convert to "${targetValue}":`);
+        if (!altLabel || !altLabel.trim()) return;
+
+        if (selectedFieldIndex === null) return;
+        const field = currentRules.columns[selectedFieldIndex];
+
+        if (!field.alternativeLabels) {
+            field.alternativeLabels = {};
+        }
+
+        // Add the mapping
+        field.alternativeLabels[altLabel.trim()] = targetValue;
+        renderListValues(field);
+    };
+
+    /**
+     * Remove an alternative label
+     */
+    window.removeAlternativeLabel = function (altLabel) {
+        if (selectedFieldIndex === null) return;
+        const field = currentRules.columns[selectedFieldIndex];
+
+        if (field.alternativeLabels && field.alternativeLabels[altLabel]) {
+            delete field.alternativeLabels[altLabel];
+            renderListValues(field);
+        }
+    };
+
 
     /**
      * Add a new field

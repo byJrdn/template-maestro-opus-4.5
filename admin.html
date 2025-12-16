@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Template Maestro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'isw-blue': { 500: '#2C3E68', 600: '#253457', 700: '#1E2A46' },
+                        'isw-green': { 500: '#5CB85C', 600: '#4A9F4A', 700: '#388638' }
+                    },
+                    fontFamily: { 'display': ['Inter', 'system-ui'], 'body': ['Source Sans 3', 'system-ui'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            visibility: hidden;
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 font-body text-slate-800 antialiased min-h-screen">
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- HEADER -->
+        <header class="bg-isw-blue-600 border-b border-slate-200 sticky top-0 z-50 shadow-md">
+            <div class="max-w-[1680px] mx-auto px-6 flex items-center justify-between h-16">
+                <div class="flex items-center gap-8">
+                    <a href="index.html" class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center -ml-2">
+                            <img src="assets/ISW-LOGO ICON.png" alt="ISW Logo" class="h-10 w-10">
+                        </div>
+                        <div>
+                            <h1 class="font-display font-bold text-xl text-white leading-tight">Template Maestro</h1>
+                            <p class="text-xs text-white/70">Admin Dashboard</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p id="header-user-name" class="text-sm font-medium text-white">Loading...</p>
+                        <p class="text-xs text-white/80">Administrator</p>
+                    </div>
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" id="user-menu-btn"
+                            class="w-9 h-9 bg-isw-green-500 text-white rounded-full flex items-center justify-center font-display font-semibold text-sm ring-2 ring-white/20 hover:ring-white/40 transition-all cursor-pointer">
+                            <span id="header-user-initials">...</span>
+                        </button>
+                        <div id="user-menu-dropdown"
+                            class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                            <a href="index.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                ← Back to App
+                            </a>
+                            <button onclick="handleSignOut()"
+                                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN -->
+        <main class="flex-1">
+            <div class="max-w-[1680px] mx-auto px-6 py-8">
+                <!-- Page Header -->
+                <div class="mb-8">
+                    <h1 class="font-display font-bold text-2xl text-slate-900 mb-1">User Management</h1>
+                    <p class="text-slate-600">Manage user accounts, roles, and access permissions</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-slate-600">Total Users</p>
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p id="stat-total" class="text-2xl font-bold text-slate-900">0</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-slate-600">Pending Approval</p>
+                            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-yellow-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p id="stat-pending" class="text-2xl font-bold text-yellow-600">0</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-slate-600">Active Users</p>
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p id="stat-active" class="text-2xl font-bold text-green-600">0</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-slate-600">Administrators</p>
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p id="stat-admins" class="text-2xl font-bold text-purple-600">0</p>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1 relative">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" id="search-users" placeholder="Search users..."
+                                class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none transition-all">
+                        </div>
+                        <select id="filter-status"
+                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[140px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                        <select id="filter-role"
+                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white min-w-[140px] focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none">
+                            <option value="">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                            <option value="viewer">Viewer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    User</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Email</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Role</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Joined</th>
+                                <th
+                                    class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body" class="divide-y divide-slate-200">
+                            <!-- Users will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Supabase & Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin-dashboard.js"></script>
+
+    <script>
+        // User menu toggle
+        function toggleUserMenu() {
+            document.getElementById('user-menu-dropdown').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-menu-dropdown');
+            const btn = document.getElementById('user-menu-btn');
+            if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        async function handleSignOut() {
+            await Auth.signOut();
+        }
+
+        function getInitials(name) {
+            if (!name) return '??';
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Check admin authentication
+        (async function () {
+            const isAdmin = await Auth.requireAdmin();
+            if (isAdmin) {
+                document.body.style.visibility = 'visible';
+
+                const profile = await Auth.getUserProfile();
+                if (profile) {
+                    const displayName = profile.full_name || profile.email.split('@')[0];
+                    const initials = getInitials(profile.full_name);
+
+                    document.getElementById('header-user-name').textContent = displayName;
+                    document.getElementById('header-user-initials').textContent = initials;
+
+                    // Load users
+                    if (typeof loadUsers === 'function') {
+                        loadUsers();
+                    }
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

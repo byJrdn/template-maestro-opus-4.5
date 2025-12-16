@@ -9,6 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- Handsontable for interactive data grid -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.1.0/dist/handsontable.full.min.css">
     <script src="https://cdn.jsdelivr.net/npm/handsontable@14.1.0/dist/handsontable.full.min.js"></script>
@@ -145,7 +148,7 @@
     </style>
 </head>
 
-<body class="bg-slate-50 font-body text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-50 font-body text-slate-800 antialiased min-h-screen" style="visibility: hidden;">
     <div id="app" class="min-h-screen flex flex-col">
 
         <!-- HEADER -->
@@ -163,18 +166,61 @@
                     <nav class="hidden md:flex items-center gap-2 pl-8 border-l border-white/20">
                         <a href="#" onclick="showPage('templates');return false;"
                             class="text-sm font-medium bg-isw-green-500 text-white px-4 py-2 rounded-md shadow-sm transition-all hover:bg-isw-green-600">Templates</a>
+                        <a id="admin-link" href="admin.html" style="display: none;"
+                            class="text-sm font-medium text-white/90 hover:text-white px-4 py-2 rounded-md transition-all hover:bg-white/10">
+                            <svg class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Admin
+                        </a>
                         <span id="breadcrumb-sep" class="text-white/50 hidden">/</span>
                         <span id="breadcrumb-cur" class="text-sm font-medium text-white hidden">Data Validation</span>
                     </nav>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right hidden sm:block">
-                        <p class="text-sm font-medium text-white">Jordan Mitchell</p>
-                        <p class="text-xs text-white/80">Template Maestro</p>
+                        <p id="header-user-name" class="text-sm font-medium text-white">Loading...</p>
+                        <p id="header-user-role" class="text-xs text-white/80">Template Maestro</p>
                     </div>
-                    <div
-                        class="w-9 h-9 bg-isw-green-500 text-white rounded-full flex items-center justify-center font-display font-semibold text-sm ring-2 ring-white/20">
-                        JM</div>
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" id="user-menu-btn"
+                            class="w-9 h-9 bg-isw-green-500 text-white rounded-full flex items-center justify-center font-display font-semibold text-sm ring-2 ring-white/20 hover:ring-white/40 transition-all cursor-pointer">
+                            <span id="header-user-initials">...</span>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="user-menu-dropdown"
+                            class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                            <div class="px-4 py-2 border-b border-slate-100">
+                                <p id="dropdown-user-name" class="text-sm font-medium text-slate-900 truncate">User</p>
+                                <p id="dropdown-user-email" class="text-xs text-slate-500 truncate" title="">
+                                    email@example.com</p>
+                            </div>
+                            <a id="admin-dropdown-link" href="admin.html" style="display: none;"
+                                class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Admin Dashboard
+                            </a>
+                            <button onclick="handleSignOut()"
+                                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -1147,6 +1193,63 @@ HANDSONTABLE INTEGRATION NOTES:
                                         </div>
                                     </div>
 
+                                    <!-- Allowed Values & Alternative Labels Section (shown for list type) -->
+                                    <div id="modal-list-section" class="bg-slate-50 rounded-xl p-5 mb-5 hidden">
+                                        <h4 class="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                            </svg>
+                                            Allowed Values & Alternative Labels
+                                        </h4>
+
+                                        <!-- Table Header -->
+                                        <div class="grid grid-cols-2 gap-4 mb-3 pb-2 border-b border-slate-200">
+                                            <div class="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                                                Allowed Value</div>
+                                            <div class="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                                                Alternative Labels (Auto-Convert)</div>
+                                        </div>
+
+                                        <!-- Values List -->
+                                        <div id="modal-list-values" class="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                                            <!-- Rows populated by JS -->
+                                        </div>
+
+                                        <!-- Add New Value -->
+                                        <div class="flex gap-2 pt-3 border-t border-slate-200">
+                                            <input type="text" id="modal-new-list-value"
+                                                placeholder="Add new allowed value..."
+                                                class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-isw-blue-500 focus:ring-2 focus:ring-isw-blue-100 focus:outline-none"
+                                                onkeypress="if(event.key==='Enter') addListValueInModal()">
+                                            <button onclick="addListValueInModal()"
+                                                class="px-4 py-2 bg-isw-blue-600 hover:bg-isw-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                                Add Value
+                                            </button>
+                                        </div>
+
+                                        <!-- Help Text -->
+                                        <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                            <div class="flex gap-2">
+                                                <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <p class="text-xs text-amber-800">
+                                                    <strong>Alternative Labels:</strong> Click "+ Add Alt" next to any
+                                                    value to define synonyms that automatically convert. Example: "US",
+                                                    "USA" → "United States"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hidden Alternative Labels Section (for backward compat) -->
+                                    <div id="modal-alt-labels-section" class="hidden"></div>
+
                                     <!-- Validation Rules Section -->
                                     <div class="bg-slate-50 rounded-xl p-5">
                                         <h4 class="font-medium text-slate-900 mb-4 flex items-center gap-2">
@@ -1198,25 +1301,211 @@ HANDSONTABLE INTEGRATION NOTES:
                     </div>
 
 
+
+
                     <!-- Auto-Fix Rules Tab -->
                     <div id="tab-autofix" class="tab-content p-6 hidden">
-                        <div class="text-center py-12">
-                            <div
-                                class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-slate-900 text-lg mb-2">Auto-Fix Rules</h3>
+                            <p class="text-sm text-slate-600">Configure automatic data corrections that run when data is
+                                uploaded. These fixes are applied before validation.</p>
+                        </div>
+
+                        <!-- General Fixes -->
+                        <div class="mb-8">
+                            <h4 class="font-medium text-slate-800 mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
+                                General Text Cleanup
+                            </h4>
+
+                            <div class="space-y-3">
+                                <!-- Trim Whitespace -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Trim Whitespace</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Remove leading and trailing spaces from
+                                            all text cells</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-trim" class="sr-only peer" checked>
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Normalize Line Breaks -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Normalize Line
+                                            Breaks</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Replace multiple spaces and line breaks
+                                            with single spaces</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-linebreaks" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Remove Special Characters -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Remove Non-Printable
+                                            Characters</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Strip invisible control characters that
+                                            cause validation issues</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-special-chars" class="sr-only peer" checked>
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                            <h3 class="font-medium text-slate-900 mb-2">Auto-Fix Rules</h3>
-                            <p class="text-sm text-slate-500 max-w-md mx-auto">
-                                Configure automatic data corrections like trimming whitespace,
-                                standardizing country codes, or formatting dates.
-                            </p>
-                            <p class="text-xs text-slate-400 mt-4">Coming in Phase 2</p>
+                        </div>
+
+                        <!-- Text Case Fixes -->
+                        <div class="mb-8">
+                            <h4 class="font-medium text-slate-800 mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                                </svg>
+                                Text Case Standardization
+                            </h4>
+
+                            <div class="space-y-3">
+                                <!-- Uppercase -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Uppercase Country
+                                            Codes</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Convert country code columns to
+                                            uppercase (US, GB, CA)</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-uppercase-country" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Title Case -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Title Case
+                                            Names</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Capitalize first letter of each word in
+                                            name fields</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-title-case" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Number & Date Fixes -->
+                        <div class="mb-8">
+                            <h4 class="font-medium text-slate-800 mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Numbers & Dates
+                            </h4>
+
+                            <div class="space-y-3">
+                                <!-- Remove Currency Symbols -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Remove Currency
+                                            Symbols</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Strip $, €, £ symbols from number
+                                            fields</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-currency" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Standardize Date Format -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Standardize Date
+                                            Format</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Convert various date formats to
+                                            YYYY-MM-DD</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-dates" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Remove Thousand Separators -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                                    <div class="flex-1">
+                                        <label class="font-medium text-slate-700 cursor-pointer">Remove Thousand
+                                            Separators</label>
+                                        <p class="text-sm text-slate-500 mt-0.5">Strip commas from numbers (1,000 →
+                                            1000)</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autofix-thousand-sep" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-isw-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-isw-green-500">
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Card -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-blue-900 mb-1">Auto-Fix Execution</p>
+                                    <p class="text-sm text-blue-700">These fixes run automatically when data is
+                                        uploaded, before validation. Changes are highlighted in yellow in the grid. You
+                                        can undo auto-fixes by clicking "Reset Grid" in Data Validation.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
 
                     <!-- Client Logic Tab - Advanced Scripting -->
                     <div id="tab-client" class="tab-content hidden h-full flex flex-col">
@@ -2177,9 +2466,88 @@ HANDSONTABLE INTEGRATION NOTES:
     <script src="js/validation-engine.js"></script>
     <script src="js/handsontable-grid.js"></script>
     <script src="js/excel-parser.js"></script>
+
+    <!-- Supabase & Cloud API (must load before template-manager) -->
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/template-api.js"></script>
+
     <script src="js/template-manager.js"></script>
     <script src="js/rule-editor.js"></script>
     <script src="js/data-export.js"></script>
+
+    <!-- Authentication UI -->
+    <script>
+        // User menu toggle
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('user-menu-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-menu-dropdown');
+            const btn = document.getElementById('user-menu-btn');
+            if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // Sign out handler
+        async function handleSignOut() {
+            await Auth.signOut();
+        }
+
+        // Get initials from name
+        function getInitials(name) {
+            if (!name) return '??';
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Check authentication on page load
+        (async function () {
+            const isAuthenticated = await Auth.requireAuth();
+            if (isAuthenticated) {
+                // User is logged in, show the app
+                document.body.style.visibility = 'visible';
+
+                // Get user profile and update UI
+                const profile = await Auth.getUserProfile();
+                if (profile) {
+                    console.log('✅ Logged in as:', profile.email, '| Role:', profile.role);
+
+                    // Update header with user info
+                    const displayName = profile.full_name || profile.email.split('@')[0];
+                    const initials = getInitials(profile.full_name);
+                    const roleDisplay = profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+
+                    document.getElementById('header-user-name').textContent = displayName;
+                    document.getElementById('header-user-role').textContent = roleDisplay;
+                    document.getElementById('header-user-initials').textContent = initials;
+                    document.getElementById('dropdown-user-name').textContent = displayName;
+                    document.getElementById('dropdown-user-email').textContent = profile.email;
+                    document.getElementById('dropdown-user-email').title = profile.email; // For hover tooltip
+
+                    // Store role globally for permission checks
+                    window.userRole = profile.role;
+
+                    // Show admin link in dropdown if user is admin
+                    if (profile.role === 'admin') {
+                        document.getElementById('admin-dropdown-link').style.display = 'flex';
+                    }
+
+                    // Load templates from cloud
+                    if (typeof loadTemplatesFromCloud === 'function') {
+                        loadTemplatesFromCloud();
+                    }
+                }
+            }
+        })();
+    </script>
 </body>
 
 </html>
