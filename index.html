@@ -2580,12 +2580,12 @@ HANDSONTABLE INTEGRATION NOTES:
             const templateRules = window.currentTemplateRules;
 
             // Check if required modules are loaded
-            if (!window.ExcelParser) {
+            if (!window.DataUpload) {
                 showToast('Parser not ready. Please try again.', 'error');
                 return;
             }
 
-            window.ExcelParser.parseFile(file, { headerRow: 1 })
+            window.DataUpload.parseFile(file)
                 .then(parsedData => {
                     parsedData.fileName = file.name;
                     parsedData.columnCount = parsedData.headers ? parsedData.headers.length : 0;
