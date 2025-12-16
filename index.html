@@ -2579,17 +2579,23 @@ HANDSONTABLE INTEGRATION NOTES:
             // Use the same processing logic as the modal upload
             const templateRules = window.currentTemplateRules;
 
-            ExcelParser.parseFile(file, { headerRow: 1 })
+            // Check if required modules are loaded
+            if (!window.ExcelParser) {
+                showToast('Parser not ready. Please try again.', 'error');
+                return;
+            }
+
+            window.ExcelParser.parseFile(file, { headerRow: 1 })
                 .then(parsedData => {
                     parsedData.fileName = file.name;
                     parsedData.columnCount = parsedData.headers ? parsedData.headers.length : 0;
 
                     // Run validation
-                    const validatedData = ValidationEngine.validateData(parsedData, templateRules);
+                    const validatedData = window.ValidationEngine.validateData(parsedData, templateRules);
                     window.currentValidatedData = validatedData;
 
                     // Initialize grid with validated data
-                    HandsontableGrid.initializeGrid('handsontable-container', validatedData, templateRules);
+                    window.HandsontableGrid.initializeGrid('handsontable-container', validatedData, templateRules);
 
                     // Update file info
                     const totalRows = validatedData.rows?.length || 0;
