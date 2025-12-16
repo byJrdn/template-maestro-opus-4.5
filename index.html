@@ -585,11 +585,11 @@ TYPE COLORS:
                             </div>
                         </div>
 
-                        <!-- Handsontable Container -->
-                        <div id="handsontable-container" class="min-h-[400px]">
+                        <!-- Handsontable Container - Set to flex to allow placeholder to fill height -->
+                        <div id="handsontable-container" class="min-h-[600px] flex flex-col">
                             <!-- Placeholder with drag-and-drop upload zone -->
                             <div id="grid-placeholder"
-                                class="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-slate-300 rounded-xl m-4 hover:border-isw-blue-400 hover:bg-isw-blue-50/50 transition-all cursor-pointer"
+                                class="flex-1 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-300 rounded-xl m-4 hover:border-isw-blue-400 hover:bg-isw-blue-50/50 transition-all cursor-pointer"
                                 ondragover="event.preventDefault(); this.classList.add('border-isw-blue-500', 'bg-isw-blue-50');"
                                 ondragleave="this.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');"
                                 ondrop="handleGridPlaceholderDrop(event)"
@@ -597,16 +597,16 @@ TYPE COLORS:
                                 <input type="file" id="grid-file-input" class="hidden" accept=".xlsx,.xls,.csv,.txt"
                                     onchange="handleGridFileSelect(this)">
                                 <div
-                                    class="w-16 h-16 bg-isw-blue-100 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
+                                    class="w-24 h-24 bg-isw-blue-100 rounded-full flex items-center justify-center mb-6">
+                                    <svg class="w-12 h-12 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                                     </svg>
                                 </div>
-                                <h3 class="font-display font-semibold text-slate-900 mb-1">No data loaded</h3>
-                                <p class="text-slate-500 text-sm mb-3">Drop your data file here or click to browse</p>
-                                <p class="text-xs text-slate-400">.xlsx, .xls, .csv, .txt • Max 50MB</p>
+                                <h3 class="font-display font-semibold text-2xl text-slate-900 mb-2">No data loaded</h3>
+                                <p class="text-slate-500 text-lg mb-4">Drop your data file here or click to browse</p>
+                                <p class="text-sm text-slate-400">.xlsx, .xls, .csv, .txt • Max 50MB</p>
                             </div>
                         </div>
 
@@ -2131,9 +2131,58 @@ HANDSONTABLE INTEGRATION NOTES:
             closeModal('data-upload');
             showPage('validation');
 
+            // Destroy any existing grid
+            if (window.HandsontableGrid) {
+                window.HandsontableGrid.destroy();
+            }
+
+            // Re-insert the placeholder HTML with updated styling
+            const container = document.getElementById('handsontable-container');
+            if (container) {
+                container.innerHTML = `
+                    <div id="grid-placeholder"
+                        class="flex-1 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-300 rounded-xl m-4 hover:border-isw-blue-400 hover:bg-isw-blue-50/50 transition-all cursor-pointer"
+                        ondragover="event.preventDefault(); this.classList.add('border-isw-blue-500', 'bg-isw-blue-50');"
+                        ondragleave="this.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');"
+                        ondrop="handleGridPlaceholderDrop(event)"
+                        onclick="document.getElementById('grid-file-input').click()">
+                        <input type="file" id="grid-file-input" class="hidden" accept=".xlsx,.xls,.csv,.txt" 
+                            onchange="handleGridFileSelect(this)">
+                        <div class="w-24 h-24 bg-isw-blue-100 rounded-full flex items-center justify-center mb-6">
+                            <svg class="w-12 h-12 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-semibold text-2xl text-slate-900 mb-2">No data loaded</h3>
+                        <p class="text-slate-500 text-lg mb-4">Drop your data file here or click to browse</p>
+                        <p class="text-sm text-slate-400">.xlsx, .xls, .csv, .txt • Max 50MB</p>
+                    </div>
+                `;
+            }
+
+            // Clear global validation data
+            window.currentValidationData = null;
+            window.pendingAutoFixes = [];
+
             // Update validation page header
             document.getElementById('validation-template-name').textContent = currentTemplateName;
             document.getElementById('validation-file-info').textContent = 'No data file loaded';
+
+            // Reset stats to defaults
+            document.getElementById('stat-completion').textContent = '--%';
+            document.getElementById('stat-completion-indicator').style.left = '0%';
+            document.getElementById('stat-completion-detail').textContent = '0 of 0 rows valid';
+            document.getElementById('stat-valid').textContent = '--';
+            document.getElementById('stat-valid-pct').textContent = '--% of total';
+            document.getElementById('stat-warnings').textContent = '--';
+            document.getElementById('stat-warnings-pct').textContent = '--% of total';
+            document.getElementById('stat-errors').textContent = '--';
+            document.getElementById('stat-errors-pct').textContent = '--% of total';
+            document.getElementById('stat-fixable').textContent = '--';
+            document.getElementById('grid-dimensions').textContent = '0 rows × 0 columns';
+            document.getElementById('last-validated').textContent = 'Last validated: --';
         }
 
         function startValidation() {
@@ -2570,34 +2619,52 @@ HANDSONTABLE INTEGRATION NOTES:
                 return;
             }
 
-            // Store the file and trigger processing
+            // Store the file
             selectedDataFile = file;
 
             // Show loading state
             showToast('Processing file...', 'info');
 
-            // Use the same processing logic as the modal upload
             const templateRules = window.currentTemplateRules;
 
             // Check if required modules are loaded
-            if (!window.DataUpload) {
-                showToast('Parser not ready. Please try again.', 'error');
+            if (!window.DataUpload || !window.ColumnMapper || !window.ValidationEngine || !window.HandsontableGrid) {
+                showToast('Modules not ready. Please refresh and try again.', 'error');
                 return;
             }
 
+            // Use the same processing logic as the modal upload
             window.DataUpload.parseFile(file)
                 .then(parsedData => {
-                    parsedData.fileName = file.name;
-                    parsedData.columnCount = parsedData.headers ? parsedData.headers.length : 0;
+                    // Map columns
+                    const mappingResult = window.ColumnMapper.mapColumns(
+                        parsedData.headers,
+                        templateRules.columns
+                    );
+
+                    // Apply mapping to create structured data
+                    const mappedRows = window.ColumnMapper.applyMapping(
+                        parsedData.rows,
+                        mappingResult,
+                        templateRules.columns
+                    );
+
+                    const structuredData = {
+                        rows: mappedRows,
+                        totalRows: mappedRows.length,
+                        columnCount: templateRules.columns.length,
+                        fileName: file.name,
+                        uploadedAt: new Date().toISOString()
+                    };
 
                     // Run validation
-                    const validatedData = window.ValidationEngine.validateData(parsedData, templateRules);
-                    window.currentValidatedData = validatedData;
+                    const validatedData = window.ValidationEngine.validateDataset(structuredData, templateRules);
+                    window.currentValidationData = validatedData;
 
                     // Initialize grid with validated data
                     window.HandsontableGrid.initializeGrid('handsontable-container', validatedData, templateRules);
 
-                    // Update file info
+                    // Update file info header
                     const totalRows = validatedData.rows?.length || 0;
                     document.getElementById('validation-file-info').textContent =
                         file.name + ' • ' + totalRows.toLocaleString() + ' rows';
