@@ -49,36 +49,36 @@ const HandsontableGrid = (function () {
         currentRules = rules;
         columnMapping = [...rules.columns];
 
-        // Apply auto-fixes before validation
+        // DETECT auto-fixable cells (but don't apply yet)
+        // Fixes are applied when user clicks "Auto-Fix Data" button
         if (window.AutoFixEngine && window.currentTemplate) {
             try {
-                // Convert structured data to 2D array for auto-fix
                 const headers = data.headers;
                 const rowsArray = data.rows.map(r =>
                     headers.map(h => r.data[h] || '')
                 );
                 const gridArray = [headers, ...rowsArray];
 
-                // Apply fixes
+                // Preview what would be fixed (don't apply)
                 const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, rules);
 
-                // Update the data structure with fixed values
+                // Store pending fixes and mark cells as fixable
+                window.pendingAutoFixes = result.changes || [];
+
                 if (result.changes && result.changes.length > 0) {
                     result.changes.forEach(change => {
-                        const dataRowIndex = change.row - 1; // Adjust for header row
+                        const dataRowIndex = change.row - 1;
                         const header = headers[change.col];
-                        if (data.rows[dataRowIndex] && header) {
-                            data.rows[dataRowIndex].data[header] = change.after;
-                            if (data.rows[dataRowIndex].metadata[header]) {
-                                data.rows[dataRowIndex].metadata[header].currentValue = change.after;
-                                data.rows[dataRowIndex].metadata[header].wasAutoFixed = true;
-                            }
+                        if (data.rows[dataRowIndex]?.metadata?.[header]) {
+                            // Mark as fixable (yellow) but DON'T change the value yet
+                            data.rows[dataRowIndex].metadata[header].isFixable = true;
+                            data.rows[dataRowIndex].metadata[header].suggestedFix = change.after;
                         }
                     });
-                    console.log(`✨ Auto-fixed ${result.changes.length} cells`);
+                    console.log(`🔍 Detected ${result.changes.length} auto-fixable cells`);
                 }
             } catch (err) {
-                console.warn('Auto-fix error (non-critical):', err);
+                console.warn('Auto-fix detection error:', err);
             }
         }
 
@@ -377,12 +377,20 @@ const HandsontableGrid = (function () {
         const cellMeta = rowData?.metadata?.[fieldName];
 
         // Clear existing validation classes
-        td.classList.remove('cell-valid', 'cell-warning', 'cell-error');
+        td.classList.remove('cell-valid', 'cell-warning', 'cell-error', 'cell-fixable');
         td.removeAttribute('data-error-msg');
 
         // Apply validation class based on status
         if (cellMeta) {
-            if (cellMeta.errors && cellMeta.errors.length > 0) {
+            // Check if cell is auto-fixable (highest priority for highlighting)
+            if (cellMeta.isFixable && !cellMeta.wasAutoFixed) {
+                td.classList.add('cell-fixable');
+                td.dataset.errorMsg = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
+            } else if (cellMeta.wasAutoFixed) {
+                // Already fixed - show as valid with indicator
+                td.classList.add('cell-valid');
+                td.dataset.errorMsg = `Auto-fixed from: "${cellMeta.originalValue}"`;
+            } else if (cellMeta.errors && cellMeta.errors.length > 0) {
                 td.classList.add('cell-error');
                 td.dataset.errorMsg = cellMeta.errors.join('; ');
             } else if (cellMeta.warnings && cellMeta.warnings.length > 0) {
@@ -391,9 +399,6 @@ const HandsontableGrid = (function () {
             } else if (rowData?.rowStatus === 'valid') {
                 td.classList.add('cell-valid');
             }
-
-            // Conditional columns show as error when triggered and empty
-            // No special amber indicator - just uses standard error styling
         }
 
         // Format dates if using DateUtils
