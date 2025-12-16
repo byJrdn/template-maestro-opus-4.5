@@ -587,19 +587,26 @@ TYPE COLORS:
 
                         <!-- Handsontable Container -->
                         <div id="handsontable-container" class="min-h-[400px]">
-                            <!-- Placeholder shown before data loads -->
+                            <!-- Placeholder with drag-and-drop upload zone -->
                             <div id="grid-placeholder"
-                                class="flex flex-col items-center justify-center py-16 text-center">
-                                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24"
+                                class="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-slate-300 rounded-xl m-4 hover:border-isw-blue-400 hover:bg-isw-blue-50/50 transition-all cursor-pointer"
+                                ondragover="event.preventDefault(); this.classList.add('border-isw-blue-500', 'bg-isw-blue-50');"
+                                ondragleave="this.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');"
+                                ondrop="handleGridPlaceholderDrop(event)"
+                                onclick="document.getElementById('grid-file-input').click()">
+                                <input type="file" id="grid-file-input" class="hidden" accept=".xlsx,.xls,.csv,.txt"
+                                    onchange="handleGridFileSelect(this)">
+                                <div
+                                    class="w-16 h-16 bg-isw-blue-100 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-isw-blue-500" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125" />
+                                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                                     </svg>
                                 </div>
                                 <h3 class="font-display font-semibold text-slate-900 mb-1">No data loaded</h3>
-                                <p class="text-slate-500 text-sm">Select a template from the list to load validation
-                                    data.</p>
+                                <p class="text-slate-500 text-sm mb-3">Drop your data file here or click to browse</p>
+                                <p class="text-xs text-slate-400">.xlsx, .xls, .csv, .txt • Max 50MB</p>
                             </div>
                         </div>
 
@@ -1471,7 +1478,8 @@ HANDSONTABLE INTEGRATION NOTES:
                                 <div class="flex-1">
                                     <p class="text-sm font-medium text-blue-900 mb-1">How Auto-Fix Works</p>
                                     <p class="text-sm text-blue-700">When data is uploaded, fixable cells are
-                                        detected and highlighted in <strong>yellow</strong>. Click "Auto-Fix Data" to
+                                        detected and marked with an <strong>amber ⚡ icon</strong>. Click "Auto-Fix Data"
+                                        to
                                         apply
                                         corrections - you'll see a summary of all changes. Use "Reset Grid" to undo
                                         fixes.
@@ -2000,6 +2008,24 @@ HANDSONTABLE INTEGRATION NOTES:
             // Update modal context
             document.getElementById('upload-template-context').textContent = 'Template: ' + currentTemplateName;
 
+            // Update expected columns and validation rules counts
+            if (window.currentTemplateRules && window.currentTemplateRules.columns) {
+                const columnCount = window.currentTemplateRules.columns.length;
+                document.getElementById('expected-columns').textContent = columnCount;
+
+                // Count validation rules (each column can have multiple rules)
+                let ruleCount = 0;
+                window.currentTemplateRules.columns.forEach(col => {
+                    if (col.required) ruleCount++;
+                    if (col.dataType) ruleCount++;
+                    if (col.allowedValues && col.allowedValues.length > 0) ruleCount++;
+                    if (col.minLength) ruleCount++;
+                    if (col.maxLength) ruleCount++;
+                    if (col.conditionallyRequired) ruleCount++;
+                });
+                document.getElementById('validation-rules-count').textContent = ruleCount || columnCount;
+            }
+
             // Reset file selection
             clearDataFile();
 
@@ -2509,6 +2535,73 @@ HANDSONTABLE INTEGRATION NOTES:
             } else {
                 showToast('No auto-fixed cells to reset', 'info');
             }
+        }
+
+        // Grid placeholder drag-and-drop handlers
+        function handleGridPlaceholderDrop(event) {
+            event.preventDefault();
+            const placeholder = document.getElementById('grid-placeholder');
+            placeholder.classList.remove('border-isw-blue-500', 'bg-isw-blue-50');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                processGridFile(files[0]);
+            }
+        }
+
+        function handleGridFileSelect(input) {
+            if (input.files.length > 0) {
+                processGridFile(input.files[0]);
+            }
+        }
+
+        function processGridFile(file) {
+            // Check if a template is selected
+            if (!window.currentTemplateId || !window.currentTemplateRules) {
+                showToast('Please select a template first', 'warning');
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['.xlsx', '.xls', '.csv', '.txt'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!validTypes.includes(ext)) {
+                showToast('Invalid file type. Please upload .xlsx, .xls, .csv, or .txt', 'error');
+                return;
+            }
+
+            // Store the file and trigger processing
+            selectedDataFile = file;
+
+            // Show loading state
+            showToast('Processing file...', 'info');
+
+            // Use the same processing logic as the modal upload
+            const templateRules = window.currentTemplateRules;
+
+            ExcelParser.parseFile(file, { headerRow: 1 })
+                .then(parsedData => {
+                    parsedData.fileName = file.name;
+                    parsedData.columnCount = parsedData.headers ? parsedData.headers.length : 0;
+
+                    // Run validation
+                    const validatedData = ValidationEngine.validateData(parsedData, templateRules);
+                    window.currentValidatedData = validatedData;
+
+                    // Initialize grid with validated data
+                    HandsontableGrid.initializeGrid('handsontable-container', validatedData, templateRules);
+
+                    // Update file info
+                    const totalRows = validatedData.rows?.length || 0;
+                    document.getElementById('validation-file-info').textContent =
+                        file.name + ' • ' + totalRows.toLocaleString() + ' rows';
+
+                    showToast('File loaded successfully!', 'success');
+                })
+                .catch(error => {
+                    console.error('File processing error:', error);
+                    showToast('Error processing file: ' + error.message, 'error');
+                });
         }
     </script>
     <script src="js/date-utils.js"></script>
