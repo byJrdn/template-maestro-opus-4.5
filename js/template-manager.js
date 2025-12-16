@@ -13,6 +13,7 @@
 
 // In-memory cache for performance (synced with cloud)
 const templateStore = new Map();
+window.templateStore = templateStore; // Expose globally for auto-fix access
 
 // Flag to track if templates have been loaded from cloud
 let templatesLoaded = false;
@@ -290,7 +291,6 @@ function openTemplateSettings(templateId, activeTab = 'rules') {
     document.getElementById('autofix-linebreaks').checked = autoFix.normalizeLineBreaks || false;
     document.getElementById('autofix-special-chars').checked = autoFix.removeSpecialChars !== false; // Default true
     document.getElementById('autofix-uppercase-country').checked = autoFix.uppercaseCountryCodes || false;
-    document.getElementById('autofix-title-case').checked = autoFix.titleCaseNames || false;
     document.getElementById('autofix-currency').checked = autoFix.removeCurrencySymbols || false;
     document.getElementById('autofix-dates').checked = autoFix.standardizeDates || false;
     document.getElementById('autofix-thousand-sep').checked = autoFix.removeThousandSeparators || false;
@@ -405,7 +405,6 @@ async function saveRulesFromJSON() {
             normalizeLineBreaks: document.getElementById('autofix-linebreaks')?.checked || false,
             removeSpecialChars: document.getElementById('autofix-special-chars')?.checked || false,
             uppercaseCountryCodes: document.getElementById('autofix-uppercase-country')?.checked || false,
-            titleCaseNames: document.getElementById('autofix-title-case')?.checked || false,
             removeCurrencySymbols: document.getElementById('autofix-currency')?.checked || false,
             standardizeDates: document.getElementById('autofix-dates')?.checked || false,
             removeThousandSeparators: document.getElementById('autofix-thousand-sep')?.checked || false

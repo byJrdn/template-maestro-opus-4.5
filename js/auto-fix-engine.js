@@ -74,7 +74,6 @@ const AutoFixEngine = (function () {
             }
         }
 
-        console.log(`✨ Auto-Fix applied ${changes.length} corrections`);
         return { data: fixedData, changes };
     }
 

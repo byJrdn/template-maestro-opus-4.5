@@ -441,31 +441,13 @@ TYPE COLORS:
                                 </svg>
                             </div>
                             <p id="stat-completion" class="stat-number text-2xl font-bold text-slate-900 mb-1">--%</p>
-                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div id="stat-completion-bar" class="h-full bg-isw-blue-500 rounded-full transition-all"
-                                    style="width: 0%"></div>
-                            </div>
-                            <p id="stat-completion-detail" class="text-xs text-slate-500 mt-1">0 of 0 rows complete</p>
-                        </div>
-
-                        <!-- Trust Score -->
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Trust
-                                    Score</span>
-                                <svg class="w-4 h-4 text-success-600" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
-                            <p id="stat-trust" class="stat-number text-2xl font-bold text-slate-900 mb-1">--%</p>
+                            <!-- Gradient bar from red to green -->
                             <div class="relative w-full h-2 trust-gradient rounded-full">
-                                <div id="stat-trust-indicator"
-                                    class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-success-600 rounded-full shadow-sm transition-all"
+                                <div id="stat-completion-indicator"
+                                    class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-slate-600 rounded-full shadow-sm transition-all"
                                     style="left: 0%"></div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">Data quality score</p>
+                            <p id="stat-completion-detail" class="text-xs text-slate-500 mt-1">0 of 0 rows complete</p>
                         </div>
 
                         <!-- Valid Rows -->
@@ -509,19 +491,18 @@ TYPE COLORS:
                         </div>
 
                         <!-- Quick Actions Mini Card -->
-                        <div
-                            class="bg-gradient-to-br from-isw-blue-700 to-isw-blue-800 rounded-xl shadow-sm p-4 text-white">
+                        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-isw-blue-200 uppercase tracking-wide">Quick
+                                <span class="text-xs font-medium text-amber-100 uppercase tracking-wide">Quick
                                     Fix</span>
-                                <svg class="w-4 h-4 text-isw-blue-200" fill="none" viewBox="0 0 24 24"
+                                <svg class="w-4 h-4 text-amber-100" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                             </div>
                             <p id="stat-fixable" class="stat-number text-2xl font-bold">--</p>
-                            <p class="text-xs text-isw-blue-200">Auto-fixable issues</p>
+                            <p class="text-xs text-amber-100">Auto-fixable issues</p>
                         </div>
                     </div>
 
@@ -542,7 +523,7 @@ TYPE COLORS:
                                 </button>
 
                                 <button id="btn-reset-grid" onclick="resetGridData()"
-                                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">
+                                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors border border-slate-300">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                         stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -558,16 +539,6 @@ TYPE COLORS:
                                     <option value="warning">Warnings Only</option>
                                     <option value="error">Errors Only</option>
                                 </select>
-
-                                <button onclick="HandsontableGrid.refresh()"
-                                    class="p-2.5 text-slate-500 hover:text-isw-blue-600 border border-slate-300 hover:border-isw-blue-300 rounded-lg transition-colors"
-                                    title="Refresh Grid">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                </button>
                             </div>
 
                             <!-- Right Actions - Export -->
@@ -608,6 +579,9 @@ TYPE COLORS:
                                 <span class="inline-flex items-center gap-1 text-xs"><span
                                         class="w-3 h-3 bg-error-100 border-l-2 border-error-600 rounded-sm"></span>
                                     Error</span>
+                                <span class="inline-flex items-center gap-1 text-xs text-amber-600">
+                                    <span class="text-sm">⚡</span>
+                                    Auto-Fixable</span>
                             </div>
                         </div>
 
@@ -2014,15 +1988,13 @@ HANDSONTABLE INTEGRATION NOTES:
             // ---------------------------------------------------------
             if (window.getTemplateRules) {
                 window.currentTemplateRules = window.getTemplateRules(templateId);
-                console.log('📋 Loaded rules for template:', currentTemplateName, window.currentTemplateRules);
             } else {
-                console.error('❌ getTemplateRules not found');
+                console.error('getTemplateRules not found');
             }
 
             // Store full template for auto-fix settings
             if (window.templateStore) {
                 window.currentTemplate = window.templateStore.get(templateId);
-                console.log('📦 Stored full template for auto-fix:', window.currentTemplate?.autoFixSettings);
             }
 
             // Update modal context
@@ -2235,16 +2207,12 @@ HANDSONTABLE INTEGRATION NOTES:
 
             // Calculate completion and trust scores
             const completion = Math.floor((stats.validRows / totalRows) * 100);
-            const trust = Math.max(0, 100 - (stats.totalErrors * 5) - (stats.totalWarnings * 1));
-            const fixable = Math.floor(stats.totalErrors * 0.7 + stats.totalWarnings * 0.4); // Estimate
+            const fixable = (window.pendingAutoFixes || []).length; // Use actual detected fixes
 
             // Update stats UI
             document.getElementById('stat-completion').textContent = completion + '%';
-            document.getElementById('stat-completion-bar').style.width = completion + '%';
+            document.getElementById('stat-completion-indicator').style.left = completion + '%';
             document.getElementById('stat-completion-detail').textContent = `${stats.validRows} of ${totalRows} rows valid`;
-
-            document.getElementById('stat-trust').textContent = trust + '%';
-            document.getElementById('stat-trust-indicator').style.left = trust + '%';
 
             document.getElementById('stat-valid').textContent = stats.validRows.toLocaleString();
             document.getElementById('stat-valid-pct').textContent = validPct + '% of total';
@@ -2330,17 +2298,13 @@ HANDSONTABLE INTEGRATION NOTES:
                 const warnings = Math.floor(totalRows * warningRate);
                 const valid = totalRows - errors - warnings;
 
-                const completion = Math.floor(85 + Math.random() * 15); // 85-100%
-                const trust = Math.floor(100 - (errorRate * 500) - (warningRate * 100)); // Based on error/warning rates
-                const fixable = Math.floor(errors * 0.7 + warnings * 0.4); // ~70% of errors, 40% of warnings fixable
+                const completion = Math.floor((valid / totalRows) * 100);
+                const fixable = (window.pendingAutoFixes || []).length; // Use actual detected fixes
 
                 // Update stats
                 document.getElementById('stat-completion').textContent = completion + '%';
-                document.getElementById('stat-completion-bar').style.width = completion + '%';
-                document.getElementById('stat-completion-detail').textContent = Math.floor(totalRows * completion / 100) + ' of ' + totalRows + ' rows complete';
-
-                document.getElementById('stat-trust').textContent = trust + '%';
-                document.getElementById('stat-trust-indicator').style.left = trust + '%';
+                document.getElementById('stat-completion-indicator').style.left = completion + '%';
+                document.getElementById('stat-completion-detail').textContent = valid + ' of ' + totalRows + ' rows valid';
 
                 document.getElementById('stat-valid').textContent = valid.toLocaleString();
                 document.getElementById('stat-valid-pct').textContent = ((valid / totalRows) * 100).toFixed(1) + '% of total';
@@ -2469,37 +2433,11 @@ HANDSONTABLE INTEGRATION NOTES:
             btn.disabled = true;
 
             setTimeout(() => {
-                // Apply all pending fixes
-                const gridData = HandsontableGrid.getData();
-                const headers = gridData.headers;
-                let appliedCount = 0;
-
-                pendingFixes.forEach(fix => {
-                    const dataRowIndex = fix.row - 1;
-                    const header = headers[fix.col];
-
-                    if (gridData.rows[dataRowIndex] && header) {
-                        // Store original for potential reset
-                        if (!gridData.rows[dataRowIndex].metadata[header].originalValue) {
-                            gridData.rows[dataRowIndex].metadata[header].originalValue =
-                                gridData.rows[dataRowIndex].data[header];
-                        }
-
-                        // Apply the fix
-                        gridData.rows[dataRowIndex].data[header] = fix.after;
-                        gridData.rows[dataRowIndex].metadata[header].currentValue = fix.after;
-                        gridData.rows[dataRowIndex].metadata[header].wasAutoFixed = true;
-                        gridData.rows[dataRowIndex].metadata[header].isFixable = false;
-                        appliedCount++;
-                    }
-                });
+                // Use the new applyAutoFixes function that properly updates the grid
+                const appliedCount = HandsontableGrid.applyAutoFixes(pendingFixes);
 
                 // Clear pending fixes
                 window.pendingAutoFixes = [];
-
-                // Refresh grid and re-validate
-                HandsontableGrid.refresh();
-                HandsontableGrid.updateStatistics();
 
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
@@ -2564,34 +2502,9 @@ HANDSONTABLE INTEGRATION NOTES:
         }
 
         function resetGridData() {
-            const gridData = HandsontableGrid.getData();
-            if (!gridData || !gridData.rows) {
-                showToast('No data to reset', 'info');
-                return;
-            }
-
-            let resetCount = 0;
-
-            gridData.rows.forEach(row => {
-                Object.keys(row.metadata).forEach(header => {
-                    const cellMeta = row.metadata[header];
-
-                    // If cell was auto-fixed and has original value stored
-                    if (cellMeta.wasAutoFixed && cellMeta.originalValue !== undefined) {
-                        row.data[header] = cellMeta.originalValue;
-                        cellMeta.currentValue = cellMeta.originalValue;
-                        cellMeta.wasAutoFixed = false;
-                        cellMeta.isFixable = true; // Mark as fixable again
-                        cellMeta.suggestedFix = cellMeta.currentValue; // Will be recalculated
-                        resetCount++;
-                    }
-                });
-            });
+            const resetCount = HandsontableGrid.resetAutoFixes();
 
             if (resetCount > 0) {
-                // Refresh grid to show original values
-                HandsontableGrid.refresh();
-                HandsontableGrid.updateStatistics();
                 showToast(`Reset ${resetCount} cells to original values`, 'success');
             } else {
                 showToast('No auto-fixed cells to reset', 'info');

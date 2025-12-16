@@ -53,29 +53,37 @@ const HandsontableGrid = (function () {
         // Fixes are applied when user clicks "Auto-Fix Data" button
         if (window.AutoFixEngine && window.currentTemplate) {
             try {
-                const headers = data.headers;
-                const rowsArray = data.rows.map(r =>
-                    headers.map(h => r.data[h] || '')
-                );
-                const gridArray = [headers, ...rowsArray];
+                // Headers may be in data.headers OR we extract from first row's keys
+                let headers = data.headers || [];
+                const rows = data.rows || [];
 
-                // Preview what would be fixed (don't apply)
-                const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, rules);
+                // If no headers array but we have rows, extract from first row's data keys
+                if (headers.length === 0 && rows.length > 0 && rows[0].data) {
+                    headers = Object.keys(rows[0].data);
+                }
 
-                // Store pending fixes and mark cells as fixable
-                window.pendingAutoFixes = result.changes || [];
+                if (headers.length > 0 && rows.length > 0) {
+                    const rowsArray = rows.map(r =>
+                        headers.map(h => r.data?.[h] || '')
+                    );
+                    const gridArray = [headers, ...rowsArray];
 
-                if (result.changes && result.changes.length > 0) {
-                    result.changes.forEach(change => {
-                        const dataRowIndex = change.row - 1;
-                        const header = headers[change.col];
-                        if (data.rows[dataRowIndex]?.metadata?.[header]) {
-                            // Mark as fixable (yellow) but DON'T change the value yet
-                            data.rows[dataRowIndex].metadata[header].isFixable = true;
-                            data.rows[dataRowIndex].metadata[header].suggestedFix = change.after;
-                        }
-                    });
-                    console.log(`🔍 Detected ${result.changes.length} auto-fixable cells`);
+                    // Preview what would be fixed (don't apply)
+                    const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, rules);
+
+                    // Store pending fixes and mark cells as fixable
+                    window.pendingAutoFixes = result.changes || [];
+
+                    if (result.changes && result.changes.length > 0) {
+                        result.changes.forEach(change => {
+                            const dataRowIndex = change.row - 1;
+                            const header = change.column || headers[change.col];
+                            if (data.rows[dataRowIndex]?.metadata?.[header]) {
+                                data.rows[dataRowIndex].metadata[header].isFixable = true;
+                                data.rows[dataRowIndex].metadata[header].suggestedFix = change.after;
+                            }
+                        });
+                    }
                 }
             } catch (err) {
                 console.warn('Auto-fix detection error:', err);
@@ -376,17 +384,17 @@ const HandsontableGrid = (function () {
         const rowData = currentData?.rows?.[row];
         const cellMeta = rowData?.metadata?.[fieldName];
 
-        // Clear existing validation classes
-        td.classList.remove('cell-valid', 'cell-warning', 'cell-error', 'cell-fixable');
+        // Clear existing validation classes and icons
+        td.classList.remove('cell-valid', 'cell-warning', 'cell-error');
         td.removeAttribute('data-error-msg');
 
-        // Apply validation class based on status
+        // Remove any existing fixable icon
+        const existingIcon = td.querySelector('.autofix-icon');
+        if (existingIcon) existingIcon.remove();
+
+        // Apply validation class based on status (normal validation styling)
         if (cellMeta) {
-            // Check if cell is auto-fixable (highest priority for highlighting)
-            if (cellMeta.isFixable && !cellMeta.wasAutoFixed) {
-                td.classList.add('cell-fixable');
-                td.dataset.errorMsg = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
-            } else if (cellMeta.wasAutoFixed) {
+            if (cellMeta.wasAutoFixed) {
                 // Already fixed - show as valid with indicator
                 td.classList.add('cell-valid');
                 td.dataset.errorMsg = `Auto-fixed from: "${cellMeta.originalValue}"`;
@@ -398,6 +406,20 @@ const HandsontableGrid = (function () {
                 td.dataset.errorMsg = cellMeta.warnings.join('; ');
             } else if (rowData?.rowStatus === 'valid') {
                 td.classList.add('cell-valid');
+            }
+
+            // Add amber lightning icon for fixable cells (overlays on top of other styling)
+            if (cellMeta.isFixable && !cellMeta.wasAutoFixed) {
+                td.style.position = 'relative';
+                const icon = document.createElement('span');
+                icon.className = 'autofix-icon';
+                icon.innerHTML = '⚡';
+                icon.style.cssText = 'position:absolute;bottom:2px;right:4px;font-size:12px;color:#F59E0B;cursor:pointer;';
+                icon.title = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
+                td.appendChild(icon);
+
+                // Also set the tooltip for the whole cell
+                td.dataset.errorMsg = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
             }
         }
 
@@ -547,10 +569,10 @@ const HandsontableGrid = (function () {
         });
 
         const pct = (n) => total > 0 ? ((n / total) * 100).toFixed(1) : '0';
-        const trustScore = total > 0 ? Math.round((valid / total) * 100) : 0;
         const completion = total > 0 ? Math.round(((valid + warnings) / total) * 100) : 0;
 
         // Update DOM elements
+        const fixableCount = (window.pendingAutoFixes || []).length;
         const updates = {
             'stat-valid': valid.toLocaleString(),
             'stat-valid-pct': `${pct(valid)}% of total`,
@@ -558,9 +580,9 @@ const HandsontableGrid = (function () {
             'stat-warnings-pct': `${pct(warnings)}% of total`,
             'stat-errors': errors.toLocaleString(),
             'stat-errors-pct': `${pct(errors)}% of total`,
-            'stat-trust': `${trustScore}%`,
             'stat-completion': `${completion}%`,
             'stat-completion-detail': `${valid} of ${total} rows valid`,
+            'stat-fixable': fixableCount.toLocaleString(),
             'grid-dimensions': `${total.toLocaleString()} rows × ${currentRules?.columns?.length || 0} columns`
         };
 
@@ -569,12 +591,9 @@ const HandsontableGrid = (function () {
             if (el) el.textContent = value;
         });
 
-        // Progress bars
-        const completionBar = document.getElementById('stat-completion-bar');
-        if (completionBar) completionBar.style.width = `${completion}%`;
-
-        const trustIndicator = document.getElementById('stat-trust-indicator');
-        if (trustIndicator) trustIndicator.style.left = `${trustScore}%`;
+        // Completion indicator (gradient bar)
+        const completionIndicator = document.getElementById('stat-completion-indicator');
+        if (completionIndicator) completionIndicator.style.left = `${completion}%`;
 
         // Timestamp
         const lastValidated = document.getElementById('last-validated');
@@ -628,6 +647,158 @@ const HandsontableGrid = (function () {
             validateAllRows();
             hotInstance.render();
             updateStatistics();
+        }
+    }
+
+    /**
+     * Apply auto-fix changes and update the grid
+     * @param {Array} fixes - Array of fix objects with {row, col, column, before, after}
+     * @returns {number} Number of fixes applied
+     */
+    function applyAutoFixes(fixes) {
+        if (!hotInstance || !currentData || !fixes || fixes.length === 0) {
+            return 0;
+        }
+
+        let appliedCount = 0;
+
+        fixes.forEach(fix => {
+            const dataRowIndex = fix.row - 1; // fix.row is 1-indexed (skipping header)
+            const header = fix.column;
+
+            if (currentData.rows[dataRowIndex] && header) {
+                const rowData = currentData.rows[dataRowIndex];
+
+                // Initialize metadata if not exists
+                if (!rowData.metadata[header]) {
+                    rowData.metadata[header] = {};
+                }
+
+                // Store original value for reset
+                if (rowData.metadata[header].originalValue === undefined) {
+                    rowData.metadata[header].originalValue = rowData.data[header];
+                }
+
+                // Apply fix to internal data
+                rowData.data[header] = fix.after;
+                rowData.metadata[header].currentValue = fix.after;
+                rowData.metadata[header].wasAutoFixed = true;
+                rowData.metadata[header].isFixable = false;
+
+                // Also update Handsontable's data source directly
+                // Find the column index in columnMapping
+                const colIndex = columnMapping.findIndex(c => c.fieldName === header);
+                if (colIndex !== -1) {
+                    const hotRowIndex = dataRowIndex;
+                    const hotColIndex = colIndex + 2; // +2 for row number and status columns
+                    hotInstance.setDataAtCell(hotRowIndex, hotColIndex, fix.after, 'autofix');
+                }
+
+                appliedCount++;
+            }
+        });
+
+        // Re-validate and re-render
+        validateAllRows();
+        hotInstance.render();
+        updateStatistics();
+
+        return appliedCount;
+    }
+
+    /**
+     * Reset all auto-fixed cells to their original values
+     * @returns {number} Number of cells reset
+     */
+    function resetAutoFixes() {
+        if (!hotInstance || !currentData) {
+            return 0;
+        }
+
+        let resetCount = 0;
+
+        currentData.rows.forEach((rowData, dataRowIndex) => {
+            Object.keys(rowData.metadata).forEach(header => {
+                const cellMeta = rowData.metadata[header];
+
+                // If cell was auto-fixed and has original value stored
+                if (cellMeta.wasAutoFixed && cellMeta.originalValue !== undefined) {
+                    const originalValue = cellMeta.originalValue;
+
+                    // Update internal data
+                    rowData.data[header] = originalValue;
+                    cellMeta.currentValue = originalValue;
+                    cellMeta.wasAutoFixed = false;
+                    cellMeta.isFixable = true; // Mark as fixable again
+                    delete cellMeta.originalValue; // Clear original value storage
+
+                    // Update Handsontable's data source directly
+                    const colIndex = columnMapping.findIndex(c => c.fieldName === header);
+                    if (colIndex !== -1) {
+                        const hotColIndex = colIndex + 2; // +2 for row number and status columns
+                        hotInstance.setDataAtCell(dataRowIndex, hotColIndex, originalValue, 'reset');
+                    }
+
+                    resetCount++;
+                }
+            });
+        });
+
+        if (resetCount > 0) {
+            // Re-validate and re-render
+            validateAllRows();
+            hotInstance.render();
+            updateStatistics();
+
+            // Re-detect auto-fixes for the reset cells
+            redetectAutoFixes();
+        }
+
+        return resetCount;
+    }
+
+    /**
+     * Re-run auto-fix detection on current data
+     * Called after reset to repopulate pendingAutoFixes
+     */
+    function redetectAutoFixes() {
+        if (!window.AutoFixEngine || !window.currentTemplate || !currentData || !currentRules) {
+            return;
+        }
+
+        try {
+            // Build headers and data array
+            let headers = [];
+            if (currentData.rows && currentData.rows[0]?.data) {
+                headers = Object.keys(currentData.rows[0].data);
+            }
+
+            if (headers.length === 0) return;
+
+            const rowsArray = currentData.rows.map(r =>
+                headers.map(h => r.data?.[h] || '')
+            );
+            const gridArray = [headers, ...rowsArray];
+
+            // Run detection
+            const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, currentRules);
+
+            // Store pending fixes and mark cells as fixable
+            window.pendingAutoFixes = result.changes || [];
+
+            if (result.changes && result.changes.length > 0) {
+                result.changes.forEach(change => {
+                    const dataRowIndex = change.row - 1;
+                    const header = change.column || headers[change.col];
+                    if (currentData.rows[dataRowIndex]?.metadata?.[header]) {
+                        currentData.rows[dataRowIndex].metadata[header].isFixable = true;
+                        currentData.rows[dataRowIndex].metadata[header].suggestedFix = change.after;
+                    }
+                });
+                hotInstance.render(); // Re-render to show lightning icons
+            }
+        } catch (err) {
+            console.warn('Auto-fix re-detection error:', err);
         }
     }
 
@@ -701,7 +872,9 @@ const HandsontableGrid = (function () {
         getData,
         getRules,
         updateStatistics,
-        filterByStatus
+        filterByStatus,
+        applyAutoFixes,
+        resetAutoFixes
     };
 
 })();
