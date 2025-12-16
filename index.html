@@ -2556,8 +2556,8 @@ HANDSONTABLE INTEGRATION NOTES:
         }
 
         function processGridFile(file) {
-            // Check if a template is selected
-            if (!window.currentTemplateId || !window.currentTemplateRules) {
+            // Check if a template is selected (currentTemplateRules is set when template is selected)
+            if (!window.currentTemplateRules) {
                 showToast('Please select a template first', 'warning');
                 return;
             }
