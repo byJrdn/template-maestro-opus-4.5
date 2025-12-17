@@ -118,7 +118,23 @@ const AutoFixEngine = (function () {
             result = removeThousandSeparators(result);
         }
 
-        // 8. Apply alternative labels (convert synonyms to canonical values)
+        // 8. Y/N boolean conversion (Yes → Y, No → N)
+        // Works for both: boolean type columns AND list columns with Y/N values
+        const isBooleanType = columnDef.type === 'boolean';
+        const isYNList = columnDef.allowedValues &&
+            columnDef.allowedValues.map(v => String(v).toLowerCase()).includes('y') &&
+            columnDef.allowedValues.map(v => String(v).toLowerCase()).includes('n');
+
+        if (isBooleanType || isYNList) {
+            const valLower = String(result).toLowerCase().trim();
+            if (valLower === 'yes') {
+                result = 'Y';
+            } else if (valLower === 'no') {
+                result = 'N';
+            }
+        }
+
+        // 9. Apply alternative labels (convert synonyms to canonical values)
         if (columnDef.alternativeLabels && Object.keys(columnDef.alternativeLabels).length > 0) {
             result = applyAlternativeLabels(result, columnDef.alternativeLabels);
         }
@@ -312,6 +328,31 @@ const AutoFixEngine = (function () {
             result.fixType = 'whitespace';
             result.canFix = true;
             result.message = 'Whitespace will be trimmed';
+        }
+
+        // Y/N boolean check - convert Yes/No to Y/N
+        // Works for both: boolean type AND list columns with Y/N values
+        const isBooleanType = rule.type === 'boolean';
+        const isYNList = rule.allowedValues &&
+            rule.allowedValues.map(v => String(v).toLowerCase()).includes('y') &&
+            rule.allowedValues.map(v => String(v).toLowerCase()).includes('n');
+
+        if (isBooleanType || isYNList) {
+            const valLower = strValue.toLowerCase().trim();
+
+            if (valLower === 'yes') {
+                result.fixedValue = 'Y';
+                result.canFix = true;
+                result.fixType = 'boolean_yn';
+                result.message = '"Yes" will be converted to "Y"';
+                return result;
+            } else if (valLower === 'no') {
+                result.fixedValue = 'N';
+                result.canFix = true;
+                result.fixType = 'boolean_yn';
+                result.message = '"No" will be converted to "N"';
+                return result;
+            }
         }
 
         // Type-specific checks

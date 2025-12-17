@@ -22,9 +22,10 @@ const DataExport = (function () {
     function getTemplateExportSettings() {
         // Try to get from current template
         const templateId = window.currentTemplateId;
+        // Ensure we access the global templateStore
         if (templateId && window.templateStore) {
-            const template = templateStore.get(templateId);
-            if (template?.exportSettings) {
+            const template = window.templateStore.get(templateId);
+            if (template && template.exportSettings && Object.keys(template.exportSettings).length > 0) {
                 return template.exportSettings;
             }
         }
@@ -73,6 +74,10 @@ const DataExport = (function () {
 
         // Get template settings
         const settings = getTemplateExportSettings();
+        console.log('🔍 Export Settings Retrieved:', settings);
+        console.log('   Template ID:', window.currentTemplateId);
+        console.log('   Export Type:', type);
+
         const templateName = document.getElementById('validation-template-name')?.textContent || 'Export';
 
         // Set defaults based on type and template settings
@@ -112,9 +117,17 @@ const DataExport = (function () {
                 break;
         }
 
+        console.log('   Format Settings for', type + ':', formatSettings);
+        console.log('   includeHeader:', formatSettings.includeHeader);
+        console.log('   includeRequirement:', formatSettings.includeRequirement);
+
         // Apply format-specific options
         if (headerCheckbox) headerCheckbox.checked = formatSettings.includeHeader ?? true;
         if (requirementCheckbox) requirementCheckbox.checked = formatSettings.includeRequirement ?? true;
+
+        console.log('   ✅ Applied to checkboxes:');
+        console.log('      Header checkbox:', headerCheckbox?.checked);
+        console.log('      Requirement checkbox:', requirementCheckbox?.checked);
 
         const filename = generateFilename(pattern, templateName, extension);
         if (filenameInput) filenameInput.value = filename;

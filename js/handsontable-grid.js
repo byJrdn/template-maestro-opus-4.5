@@ -408,18 +408,50 @@ const HandsontableGrid = (function () {
                 td.classList.add('cell-valid');
             }
 
+            // Check if cell is fixable - first check metadata flag, then check pendingAutoFixes
+            let isFixable = cellMeta.isFixable;
+            let suggestedFix = cellMeta.suggestedFix;
+
+            // Fallback: check pendingAutoFixes array directly
+            if (!isFixable && window.pendingAutoFixes && window.pendingAutoFixes.length > 0) {
+                // Try multiple matching strategies
+                const pendingFix = window.pendingAutoFixes.find(fix => {
+                    // Row: fix.row is 1-indexed (row 1 = first data row since headers are row 0)
+                    // In grid: row 0 = first data row
+                    // So fix.row - 1 === row
+                    const rowMatch = (fix.row - 1) === row;
+
+                    // Column: try both column name and index matching
+                    const colByName = fix.column && fix.column.toLowerCase() === fieldName.toLowerCase();
+                    const colByIndex = fix.col === (col - 2);
+
+                    // Debug: log potential matches
+                    if (rowMatch) {
+                        console.log(`🔍 Row ${row} matches fix.row ${fix.row}. Checking column: fix.column="${fix.column}" vs fieldName="${fieldName}", fix.col=${fix.col} vs col-2=${col - 2}`);
+                    }
+
+                    return rowMatch && (colByName || colByIndex);
+                });
+
+                if (pendingFix) {
+                    isFixable = true;
+                    suggestedFix = pendingFix.after;
+                    console.log('✅ Found pending fix:', pendingFix, 'for row:', row, 'col:', col, 'fieldName:', fieldName);
+                }
+            }
+
             // Add amber lightning icon for fixable cells (overlays on top of other styling)
-            if (cellMeta.isFixable && !cellMeta.wasAutoFixed) {
+            if (isFixable && !cellMeta.wasAutoFixed) {
                 td.style.position = 'relative';
                 const icon = document.createElement('span');
                 icon.className = 'autofix-icon';
                 icon.innerHTML = '⚡';
                 icon.style.cssText = 'position:absolute;bottom:2px;right:4px;font-size:12px;color:#F59E0B;cursor:pointer;';
-                icon.title = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
+                icon.title = `Can auto-fix: "${value}" → "${suggestedFix}"`;
                 td.appendChild(icon);
 
                 // Also set the tooltip for the whole cell
-                td.dataset.errorMsg = `Can auto-fix: "${value}" → "${cellMeta.suggestedFix}"`;
+                td.dataset.errorMsg = `Can auto-fix: "${value}" → "${suggestedFix}"`;
             }
         }
 
@@ -470,10 +502,71 @@ const HandsontableGrid = (function () {
 
         // Re-validate and update UI
         validateAllRows();
+
+        // Re-detect auto-fix opportunities for new values
+        detectAutoFixes();
+
         updateStatistics();
 
         if (hotInstance) {
             hotInstance.render();
+        }
+    }
+
+    /**
+     * Re-detect auto-fixable cells based on current data
+     * Called after cell edits to update the lightning icon indicators
+     */
+    function detectAutoFixes() {
+        if (!window.AutoFixEngine || !window.currentTemplate || !currentData || !currentRules) {
+            return;
+        }
+
+        try {
+            let headers = currentData.headers || [];
+            const rows = currentData.rows || [];
+
+            // Extract headers from first row's data keys if not available
+            if (headers.length === 0 && rows.length > 0 && rows[0].data) {
+                headers = Object.keys(rows[0].data);
+            }
+
+            if (headers.length === 0 || rows.length === 0) return;
+
+            // Build grid array from current data (using currentValue, not original)
+            const rowsArray = rows.map(r =>
+                headers.map(h => r.data?.[h] || r.metadata?.[h]?.currentValue || '')
+            );
+            const gridArray = [headers, ...rowsArray];
+
+            // Preview what would be fixed
+            const result = AutoFixEngine.applyAutoFixes(gridArray, window.currentTemplate, currentRules);
+
+            // Clear old fixable flags
+            rows.forEach(row => {
+                Object.keys(row.metadata || {}).forEach(key => {
+                    if (row.metadata[key]) {
+                        row.metadata[key].isFixable = false;
+                        row.metadata[key].suggestedFix = null;
+                    }
+                });
+            });
+
+            // Store pending fixes and mark cells as fixable
+            window.pendingAutoFixes = result.changes || [];
+
+            if (result.changes && result.changes.length > 0) {
+                result.changes.forEach(change => {
+                    const dataRowIndex = change.row - 1;
+                    const header = change.column || headers[change.col];
+                    if (currentData.rows[dataRowIndex]?.metadata?.[header]) {
+                        currentData.rows[dataRowIndex].metadata[header].isFixable = true;
+                        currentData.rows[dataRowIndex].metadata[header].suggestedFix = change.after;
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn('Auto-fix re-detection error:', err);
         }
     }
 

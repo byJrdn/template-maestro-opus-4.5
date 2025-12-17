@@ -394,10 +394,13 @@ async function saveRulesFromJSON() {
         template.ruleSummary = generateRuleSummary(updatedRules);
         template.updatedAt = new Date().toISOString();
 
+
         // Save export settings from the Export Settings tab
         if (window.DataExport && window.DataExport.getExportSettingsFromModal) {
             template.exportSettings = window.DataExport.getExportSettingsFromModal();
+            console.log('💾 Saving Export Settings:', template.exportSettings);
         }
+
 
         // Save auto-fix settings from Auto-Fix Rules tab
         template.autoFixSettings = {

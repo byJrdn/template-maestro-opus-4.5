@@ -453,7 +453,8 @@ TYPE COLORS:
                         <!-- Valid Rows -->
                         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Valid</span>
+                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Valid
+                                    Rows</span>
                                 <svg class="w-4 h-4 text-success-600" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -466,7 +467,8 @@ TYPE COLORS:
                         <!-- Warning Rows -->
                         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Warnings</span>
+                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Rows with
+                                    Warnings</span>
                                 <svg class="w-4 h-4 text-warning-600" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -480,7 +482,8 @@ TYPE COLORS:
                         <!-- Error Rows -->
                         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Errors</span>
+                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Rows with
+                                    Errors</span>
                                 <svg class="w-4 h-4 text-error-600" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -2218,25 +2221,14 @@ HANDSONTABLE INTEGRATION NOTES:
                         templateRules.columns
                     );
 
-                    console.log('🔗 Column Mapping Result:');
-                    console.log('  Confidence:', (mappingResult.confidence * 100).toFixed(1) + '%');
-                    console.log('  Mapped:', mappingResult.mappedCount, '/', mappingResult.totalColumns);
+                    console.log('🔗 Column Mapping Result (Positional):');
+                    console.log('  Template columns:', mappingResult.totalColumns);
+                    console.log('  File columns:', mappingResult.clientColumnCount);
+                    console.log('  Mapped:', mappingResult.mappedCount);
 
-                    if (mappingResult.unmapped.length > 0) {
-                        console.warn('  Unmapped columns:', mappingResult.unmapped);
-                    }
-
-                    // Check confidence threshold
-                    if (mappingResult.confidence < 0.8) {
-                        const proceed = confirm(
-                            `Column mapping confidence is ${(mappingResult.confidence * 100).toFixed(0)}%.\n\n` +
-                            `Unmapped columns: ${mappingResult.unmapped.map(u => u.templateColumn).join(', ')}\n\n` +
-                            `Continue anyway?`
-                        );
-                        if (!proceed) {
-                            showPage('upload');
-                            return;
-                        }
+                    // Log any warnings (extra/missing columns)
+                    if (mappingResult.warnings.length > 0) {
+                        console.warn('  Mapping warnings:', mappingResult.warnings);
                     }
 
                     // 4. Apply mapping to create structured data

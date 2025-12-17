@@ -182,6 +182,21 @@ const ValidationEngine = (function () {
                     errorMsg = 'Must be a number';
                 }
                 break;
+            case 'boolean':
+                // Boolean type: only Y or N are valid
+                const valUpper = String(value).trim().toUpperCase();
+                if (valUpper !== 'Y' && valUpper !== 'N') {
+                    isValid = false;
+                    // Check if it's "Yes" or "No" which can be auto-fixed
+                    const valLower = String(value).trim().toLowerCase();
+                    if (valLower === 'yes' || valLower === 'no') {
+                        errorMsg = `Boolean must be Y or N (found "${value}")`;
+                        cellMeta.canAutoFix = true;
+                    } else {
+                        errorMsg = 'Boolean must be Y or N';
+                    }
+                }
+                break;
         }
 
         if (!isValid) {

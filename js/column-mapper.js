@@ -1,121 +1,63 @@
 /**
- * Column Mapper - Intelligent mapping between client file and template columns
- * Maps client data columns to template columns using header matching
+ * Column Mapper - Simple positional mapping between client file and template columns
+ * Assumes user uploads the correct template format for the selected model
+ * Maps columns by position: column 0 in file = column 0 in template
  */
 
 const ColumnMapper = (function () {
     'use strict';
 
     /**
-     * Calculate string similarity (0-1) using Levenshtein distance
-     */
-    function similarity(str1, str2) {
-        const s1 = str1.toLowerCase().trim();
-        const s2 = str2.toLowerCase().trim();
-
-        if (s1 === s2) return 1.0;
-        if (s1.length === 0 || s2.length === 0) return 0.0;
-
-        // Simple similarity: check if one contains the other
-        if (s1.includes(s2) || s2.includes(s1)) {
-            return 0.85;
-        }
-
-        // Calculate Levenshtein distance
-        const matrix = [];
-        for (let i = 0; i <= s2.length; i++) {
-            matrix[i] = [i];
-        }
-        for (let j = 0; j <= s1.length; j++) {
-            matrix[0][j] = j;
-        }
-        for (let i = 1; i <= s2.length; i++) {
-            for (let j = 1; j <= s1.length; j++) {
-                if (s2.charAt(i - 1) === s1.charAt(j - 1)) {
-                    matrix[i][j] = matrix[i - 1][j - 1];
-                } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i - 1][j - 1] + 1,
-                        matrix[i][j - 1] + 1,
-                        matrix[i - 1][j] + 1
-                    );
-                }
-            }
-        }
-
-        const distance = matrix[s2.length][s1.length];
-        const maxLength = Math.max(s1.length, s2.length);
-        return 1 - (distance / maxLength);
-    }
-
-    /**
-     * Clean header for comparison (remove extra spaces, descriptions, etc.)
-     */
-    function cleanHeader(header) {
-        if (!header) return '';
-
-        // Split by multiple spaces or tabs
-        const parts = String(header).split(/\s{2,}|\t/);
-
-        // Return just the field name part
-        return parts[0].trim();
-    }
-
-    /**
-     * Map client file columns to template columns
+     * Map client file columns to template columns by position
      * @param {Array<string>} clientHeaders - Headers from client file
      * @param {Array<Object>} templateColumns - Template column definitions
-     * @returns {Object} Mapping result with confidence score
+     * @returns {Object} Mapping result
      */
     function mapColumns(clientHeaders, templateColumns) {
-        const cleanedHeaders = clientHeaders.map(h => cleanHeader(h));
         const mapping = {};
-        const unmapped = [];
         const warnings = [];
 
+        // Map by position - column 0 in file = column 0 in template
         templateColumns.forEach((templateCol, templateIndex) => {
-            const templateFieldName = cleanHeader(templateCol.fieldName);
-            let bestMatch = -1;
-            let bestScore = 0;
-
-            // Try to find best matching client column
-            cleanedHeaders.forEach((clientHeader, clientIndex) => {
-                const score = similarity(clientHeader, templateFieldName);
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = clientIndex;
-                }
-            });
-
-            // Accept match if similarity > 0.7 (70%)
-            if (bestScore > 0.7) {
+            if (templateIndex < clientHeaders.length) {
+                // Map this template column to the same position in client file
                 mapping[templateCol.fieldName] = {
-                    clientColumnIndex: bestMatch,
-                    clientColumnName: clientHeaders[bestMatch],
-                    confidence: bestScore
+                    clientColumnIndex: templateIndex,
+                    clientColumnName: clientHeaders[templateIndex],
+                    confidence: 1.0  // Positional mapping is 100% confidence
                 };
             } else {
-                unmapped.push({
-                    templateColumn: templateCol.fieldName,
-                    bestMatch: bestMatch >= 0 ? clientHeaders[bestMatch] : null,
-                    bestScore: bestScore
+                // No client column at this position
+                warnings.push({
+                    type: 'missing_column',
+                    message: `Template column "${templateCol.fieldName}" has no corresponding column in file`
                 });
             }
         });
 
-        // Calculate overall confidence
+        // Check if client has extra columns not in template
+        if (clientHeaders.length > templateColumns.length) {
+            const extraCount = clientHeaders.length - templateColumns.length;
+            warnings.push({
+                type: 'extra_columns',
+                message: `File has ${extraCount} extra column(s) not in template`
+            });
+        }
+
         const mappedCount = Object.keys(mapping).length;
         const totalColumns = templateColumns.length;
-        const overallConfidence = totalColumns > 0 ? mappedCount / totalColumns : 0;
+
+        // Confidence is based on how many template columns we could map
+        const overallConfidence = totalColumns > 0 ? mappedCount / totalColumns : 1;
 
         return {
             mapping,
-            unmapped,
+            unmapped: [],  // No unmapped with positional mapping
             warnings,
             confidence: overallConfidence,
             mappedCount,
-            totalColumns
+            totalColumns,
+            clientColumnCount: clientHeaders.length
         };
     }
 
@@ -132,18 +74,21 @@ const ColumnMapper = (function () {
             const metadata = {};
 
             // Map each template column
-            templateColumns.forEach(templateCol => {
+            templateColumns.forEach((templateCol, colIndex) => {
                 const map = mappingResult.mapping[templateCol.fieldName];
 
                 if (map) {
-                    // Get value from client column
-                    const value = row[map.clientColumnIndex] || '';
-                    mappedData[templateCol.fieldName] = value;
+                    // Get value from client column by position
+                    const value = row[map.clientColumnIndex];
+                    // Handle various falsy values properly
+                    const normalizedValue = (value === null || value === undefined) ? '' : String(value);
+
+                    mappedData[templateCol.fieldName] = normalizedValue;
 
                     // Initialize metadata
                     metadata[templateCol.fieldName] = {
-                        originalValue: value,
-                        currentValue: value,
+                        originalValue: normalizedValue,
+                        currentValue: normalizedValue,
                         isModified: false,
                         errors: [],
                         warnings: [],
@@ -151,14 +96,14 @@ const ColumnMapper = (function () {
                         canAutoFix: false
                     };
                 } else {
-                    // Column not mapped - leave empty
+                    // Column not mapped (template has more columns than file)
                     mappedData[templateCol.fieldName] = '';
                     metadata[templateCol.fieldName] = {
                         originalValue: '',
                         currentValue: '',
                         isModified: false,
                         errors: [],
-                        warnings: ['Column not found in client file'],
+                        warnings: ['Column not found in uploaded file'],
                         validationStatus: 'warning',
                         canAutoFix: false
                     };
@@ -176,9 +121,7 @@ const ColumnMapper = (function () {
 
     return {
         mapColumns,
-        applyMapping,
-        similarity,
-        cleanHeader
+        applyMapping
     };
 })();
 
