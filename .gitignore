@@ -1,0 +1,25 @@
+# Node
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Database / exported data
+*.sqlite
+*.db
+# Ignore large exports if present
+*.csv
